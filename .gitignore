@@ -1,0 +1,23 @@
+docs/
+backend/groq_extractor.py
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Env
+.env
+backend/.env
+
+# Node
+node_modules/
+
+# Build
+dist/
+
+
+backend/test_out.txt
+backend/test_gemini.py
