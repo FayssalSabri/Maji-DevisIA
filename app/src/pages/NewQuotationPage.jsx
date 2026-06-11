@@ -30,7 +30,7 @@ export const NewQuotationPage = ({ currentRoute, setRoute }) => {
         {step === 3 && <ReviewStep />}
         {step === 4 && <CostStep />}
         {step === 5 && <ValidationStep />}
-        {step === 6 && <PreviewStep />}
+        {step === 6 && <PreviewStep setRoute={setRoute} />}
       </div>
     </Layout>
   );

@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { Search, Filter, Download } from 'lucide-react';
 
 export const HistoryPage = ({ currentRoute, setRoute }) => {
-  const { state, fetchHistory } = useAppContext();
+  const { state, fetchHistory, dispatch } = useAppContext();
 
   useEffect(() => {
     fetchHistory();
@@ -48,7 +48,14 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
                   <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{q.id}</span></td>
                   <td style={{ fontWeight: 500 }}>{q.client}</td>
                   <td>{q.reference}</td>
-                  <td>{q.designation}</td>
+                  <td>
+                    <div>{q.designation}</div>
+                    {q.observation && (
+                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                        <strong style={{ color: 'var(--text-secondary)' }}>Obs:</strong> {q.observation}
+                      </div>
+                    )}
+                  </td>
                   <td>{new Date(q.date).toLocaleDateString('fr-FR')}</td>
                   <td>
                     <span className={`badge ${
@@ -65,8 +72,12 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
                     <button 
                       className="btn btn-ghost btn-sm"
                       onClick={() => {
-                        alert(`Ouverture du devis ${q.id} (Simulation PDF)`);
-                        window.open('/piece_003.pdf', '_blank');
+                        if (q.specs && q.costs) {
+                          dispatch({ type: 'LOAD_QUOTATION', payload: q });
+                          setRoute('new-quotation');
+                        } else {
+                          alert('Ce devis ancien ne contient pas les données complètes.');
+                        }
                       }}
                     >
                       Ouvrir

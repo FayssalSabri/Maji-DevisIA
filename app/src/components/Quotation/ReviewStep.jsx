@@ -1,11 +1,12 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ConfidenceBadge } from '../ui/ConfidenceBadge';
-import { ArrowRight, Save, Edit3 } from 'lucide-react';
+import { ArrowRight, Save, Edit3, BrainCircuit, ChevronDown, ChevronUp } from 'lucide-react';
 
 export const ReviewStep = () => {
   const { state, dispatch } = useAppContext();
   const specs = state.currentWizard.specs;
+  const [showReasoning, setShowReasoning] = React.useState(false);
 
   const handleNext = () => {
     dispatch({ type: 'SET_STEP', payload: 4 });
@@ -29,6 +30,33 @@ export const ReviewStep = () => {
 
         <div className="review-layout" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
+          {/* AI Reasoning Panel */}
+          <div className="review-section" style={{ border: '1px solid var(--accent)', background: 'rgba(13, 148, 136, 0.05)' }}>
+            <div 
+              className="review-section-header" 
+              style={{ color: 'var(--accent)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', borderBottom: showReasoning ? '1px solid rgba(13, 148, 136, 0.2)' : 'none' }}
+              onClick={() => setShowReasoning(!showReasoning)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BrainCircuit size={16} /> 
+                Raisonnement de l'IA Estimateur
+              </div>
+              {showReasoning ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+            {showReasoning && (
+              <div className="review-section-body" style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                <strong>Analyse du plan PDF :</strong>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
+                  <li>Extrait la référence <em>{specs.identification.reference}</em> et la désignation <em>{specs.identification.designation}</em> depuis le cartouche en bas à droite.</li>
+                  <li>Matière <em>{specs.material.type} {specs.material.nuance}</em> détectée dans les notes générales.</li>
+                  <li>Extrait {specs.holes.reduce((sum, h) => sum + h.quantity, 0)} perçages (trous de fixation) à partir des vues de projection.</li>
+                  <li>Détecté {specs.bends.reduce((sum, b) => sum + b.quantity, 0)} zones de pliage selon les lignes de construction et annotations.</li>
+                  <li>Volume et masse calculés analytiquement à partir des dimensions d'encombrement.</li>
+                </ul>
+              </div>
+            )}
+          </div>
+
           {/* Identification */}
           <div className="review-section">
             <div className="review-section-header">Identification</div>
