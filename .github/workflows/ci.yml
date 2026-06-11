@@ -1,0 +1,37 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Compose services
+        run: |
+          docker compose build
+      
+      - name: Lint and Test Frontend (Optional)
+        working-directory: ./app
+        run: |
+          # If you have tests, you can run them here
+          npm install
+          npm run build
+          # npm test
+
+      - name: Lint and Test Backend (Optional)
+        working-directory: ./backend
+        run: |
+          # If you have tests, you can run them here
+          pip install -r requirements.txt
+          # pytest
