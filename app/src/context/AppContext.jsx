@@ -51,6 +51,17 @@ function reducer(state, action) {
       return { ...state, currentWizard: { ...state.currentWizard, validation: action.payload, isProcessing: false } };
     case 'RESET_WIZARD':
       return { ...state, currentWizard: initialState.currentWizard };
+    case 'LOAD_QUOTATION':
+      return { 
+        ...state, 
+        currentWizard: { 
+          ...state.currentWizard, 
+          step: 6, 
+          specs: action.payload.specs, 
+          costs: action.payload.costs,
+          file: { url: '/piece_003.pdf', name: 'piece_003.pdf' } 
+        } 
+      };
     case 'UPDATE_PARAMETER':
       return {
         ...state,
@@ -78,7 +89,8 @@ function reducer(state, action) {
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const API_BASE = 'http://localhost:8000/api';
+  // Using relative path so Nginx (Prod) or Vite Proxy (Dev) routes it correctly
+  const API_BASE = '/api';
 
   // 1. Extraction (FastAPI + Gemini)
   const simulateExtraction = async (fileObj) => {
