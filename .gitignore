@@ -1,23 +1,34 @@
-docs/
-backend/groq_extractor.py
+# Dependencies
+node_modules/
 venv/
-.env
-
-# Python
+env/
+.venv/
 __pycache__/
 *.pyc
-venv/
+*.pyo
+*.pyd
 
-# Env
+# Environments
 .env
+.env.local
 backend/.env
+app/.env
 
-# Node
-node_modules/
-
-# Build
+# Builds
 dist/
+build/
+.vite/
 
+# IDEs
+.vscode/
+.idea/
+*.swp
+.DS_Store
 
+# Scratch / Test files
 backend/test_out.txt
 backend/test_gemini.py
+backend/database.json
+
+
+docs/
