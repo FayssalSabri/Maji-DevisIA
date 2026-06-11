@@ -11,7 +11,9 @@ from services.validation_service import validate_quotation
 
 app = FastAPI(title="Maji AI Backend", version="1.0.0")
 
-DB_FILE = "database.json"
+DB_DIR = "data"
+os.makedirs(DB_DIR, exist_ok=True)
+DB_FILE = os.path.join(DB_DIR, "database.json")
 
 def load_db():
     if os.path.exists(DB_FILE):
@@ -123,3 +125,15 @@ async def save_quotation(payload: Dict[str, Any] = Body(...)):
     db_quotations.insert(0, new_quote)
     save_db(db_quotations)
     return {"status": "success", "data": new_quote}
+
+@app.put("/api/history/{quote_id}/status")
+async def update_quotation_status(quote_id: str, payload: Dict[str, Any] = Body(...)):
+    new_status = payload.get("status")
+    for q in db_quotations:
+        if q["id"] == quote_id:
+            q["status"] = new_status
+            save_db(db_quotations)
+            return {"status": "success", "data": q}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=404, content={"status": "error", "message": "Quotation not found"})
+

@@ -14,7 +14,7 @@ services:
       - ./backend/.env
     # Optional: mount database.json for persistence across container restarts
     volumes:
-      - maji_db:/app/
+      - maji_db:/app/data
     restart: unless-stopped
 
   frontend:

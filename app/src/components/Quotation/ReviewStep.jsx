@@ -17,7 +17,7 @@ export const ReviewStep = () => {
   };
 
   return (
-    <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', height: '100%' }}>
+    <div className="fade-in split-layout">
       
       {/* Left: Interactive Form */}
       <div style={{ overflowY: 'auto', paddingRight: '16px' }}>
@@ -201,7 +201,7 @@ export const ReviewStep = () => {
       </div>
 
       {/* Right: PDF Context */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="mobile-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h3 style={{ fontSize: '14px' }}>Document Source</h3>
           <span className="badge badge-success">Extraction Terminée</span>

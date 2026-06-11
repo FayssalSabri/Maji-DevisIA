@@ -32,7 +32,7 @@ export const CostStep = () => {
   const isLowThreshold = costs.subtotal < 5.00;
 
   return (
-    <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '32px', height: '100%' }}>
+    <div className="fade-in split-layout-cost">
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2 style={{ fontSize: '18px' }}>Détail du Chiffrage</h2>

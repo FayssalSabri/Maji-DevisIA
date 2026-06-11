@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout } from '../components/Layout/Layout';
 import { KPICards } from '../components/Dashboard/KPICards';
 import { RecentQuotations } from '../components/Dashboard/RecentQuotations';
+import { AnalyticsChart } from '../components/Dashboard/AnalyticsChart';
 
 export const DashboardPage = ({ currentRoute, setRoute }) => {
   return (
@@ -13,6 +14,8 @@ export const DashboardPage = ({ currentRoute, setRoute }) => {
     >
       <KPICards />
       
+      <AnalyticsChart />
+
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
         <RecentQuotations setRoute={setRoute} />
         

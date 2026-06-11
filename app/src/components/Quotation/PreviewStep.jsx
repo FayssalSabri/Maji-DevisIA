@@ -50,7 +50,7 @@ export const PreviewStep = ({ setRoute }) => {
       margin: 0,
       filename: `MAJI_${prefix}_${refDevis}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, windowWidth: 1024 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: 'avoid-all' }
     };
@@ -65,7 +65,7 @@ export const PreviewStep = ({ setRoute }) => {
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       
       {/* ── DUAL-VIEW TABS ── */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button 
           className={`btn ${activeTab === 'technical' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('technical')}
@@ -85,7 +85,7 @@ export const PreviewStep = ({ setRoute }) => {
       {/* ── SAVE CONFIGURATION ── */}
       <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)', width: '100%', maxWidth: '210mm', marginBottom: '16px' }}>
         <h3 style={{ fontSize: '14px', marginBottom: '12px' }}>Configuration de l'enregistrement</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '16px' }}>
+        <div className="form-row">
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Statut du devis</label>
             <select className="form-input" value={status} onChange={e => setStatus(e.target.value)}>
@@ -109,6 +109,16 @@ export const PreviewStep = ({ setRoute }) => {
 
       {/* ── ACTION BAR ── */}
       <div className="pd-action-bar">
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => {
+            alert("✅ Webhook déclenché avec succès !\n\nLe devis a été synchronisé avec Odoo / Salesforce (Simulation API MVP).");
+          }}
+          title="Push to CRM/ERP"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          Sync CRM
+        </button>
         <button className="btn btn-secondary" onClick={handleExportPDF}>
           <Download size={16} /> Exporter PDF
         </button>
@@ -123,21 +133,21 @@ export const PreviewStep = ({ setRoute }) => {
           <div className="pd-scale-wrapper">
             <div className="pd-page" ref={technicalPdfRef}>
               
-              <div style={{ borderBottom: '2px solid #1a1a2e', paddingBottom: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div className="pd-tech-header">
                 <div>
                   <h1 style={{ fontSize: '20px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fiche de Chiffrage Technique</h1>
                   <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Document Interne Usine — Généré par MAJI AI</div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div className="pd-tech-header-right">
                   <img src="/maji-logo-vert.png" alt="MAJI" style={{ height: '20px', marginBottom: '8px' }} />
                   <div style={{ fontSize: '10px', fontWeight: 'bold' }}>Réf: {refDevis}</div>
                 </div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+              <div className="pd-tech-grid">
                 <div style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '16px' }}>
                   <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#0d9488', margin: '0 0 12px 0' }}>Informations Pièce</h3>
-                  <table style={{ width: '100%', fontSize: '12px' }}>
+                  <table className="pd-tech-table">
                     <tbody>
                       <tr><td style={{ padding: '4px 0', color: '#6b7280' }}>Référence</td><td style={{ fontWeight: 'bold', textAlign: 'right' }}>{specs.identification.reference}</td></tr>
                       <tr><td style={{ padding: '4px 0', color: '#6b7280' }}>Client</td><td style={{ fontWeight: 'bold', textAlign: 'right' }}>{specs.identification.client}</td></tr>
@@ -149,7 +159,7 @@ export const PreviewStep = ({ setRoute }) => {
                 
                 <div style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '16px' }}>
                   <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#0d9488', margin: '0 0 12px 0' }}>Matière & Dimensions</h3>
-                  <table style={{ width: '100%', fontSize: '12px' }}>
+                  <table className="pd-tech-table">
                     <tbody>
                       <tr><td style={{ padding: '4px 0', color: '#6b7280' }}>Matière</td><td style={{ fontWeight: 'bold', textAlign: 'right' }}>{specs.material.type} {specs.material.nuance}</td></tr>
                       <tr><td style={{ padding: '4px 0', color: '#6b7280' }}>Épaisseur</td><td style={{ fontWeight: 'bold', textAlign: 'right' }}>{specs.material.thickness} mm</td></tr>
@@ -161,7 +171,7 @@ export const PreviewStep = ({ setRoute }) => {
               </div>
 
               <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#0d9488', margin: '0 0 8px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px' }}>Gamme Opératoire (Nomenclature)</h3>
-              <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse', marginBottom: '32px' }}>
+              <table className="pd-tech-table" style={{ borderCollapse: 'collapse', marginBottom: '32px' }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
                     <th style={{ padding: '8px', textAlign: 'left' }}>Opération</th>
@@ -194,19 +204,19 @@ export const PreviewStep = ({ setRoute }) => {
               </table>
 
               <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#0d9488', margin: '0 0 8px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px' }}>Synthèse des Coûts Industriels (PR)</h3>
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="pd-tech-summary">
                 <div>
                   <div style={{ fontSize: '12px', color: '#6b7280' }}>Coût de Production Brut (PR) unitaire</div>
                   <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>{fmt(costs.subtotal)} €</div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div className="pd-tech-summary-right">
                   <div style={{ fontSize: '10px', color: '#6b7280', fontFamily: 'monospace' }}>
                     MAT: {fmt(costs.material)}€ | DEC: {fmt(costs.cutting)}€ | PLI: {fmt(costs.bending)}€ | TRT: {fmt(costs.surfaceTreatment)}€ | MO: {fmt(costs.labor)}€
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginTop: '32px', borderTop: '1px solid #e5e7eb', paddingTop: '16px', fontSize: '10px', color: '#9ca3af', display: 'flex', justifyContent: 'space-between' }}>
+              <div className="pd-tech-footer">
                 <span>Validé par l'algorithme MAJI AI V2.1</span>
                 <span>Date d'édition: {today}</span>
               </div>

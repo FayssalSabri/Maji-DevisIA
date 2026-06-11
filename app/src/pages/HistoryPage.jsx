@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { Search, Filter, Download } from 'lucide-react';
 
 export const HistoryPage = ({ currentRoute, setRoute }) => {
-  const { state, fetchHistory, dispatch } = useAppContext();
+  const { state, fetchHistory, dispatch, updateQuotationStatus } = useAppContext();
 
   useEffect(() => {
     fetchHistory();
@@ -58,12 +58,26 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
                   </td>
                   <td>{new Date(q.date).toLocaleDateString('fr-FR')}</td>
                   <td>
-                    <span className={`badge ${
-                      q.status === 'Validé' ? 'badge-success' : 
-                      q.status === 'Envoyé' ? 'badge-info' : 'badge-warning'
-                    }`}>
-                      {q.status}
-                    </span>
+                    <select
+                      value={q.status}
+                      onChange={(e) => updateQuotationStatus(q.id, e.target.value)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-subtle)',
+                        background: q.status === 'Validé' ? 'var(--success-muted)' : q.status === 'Envoyé' ? 'var(--info-muted)' : q.status === 'Refusé' ? 'var(--error-muted)' : 'var(--warning-muted)',
+                        color: q.status === 'Validé' ? 'var(--success)' : q.status === 'Envoyé' ? 'var(--info)' : q.status === 'Refusé' ? 'var(--error)' : 'var(--warning)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="Brouillon" style={{ color: 'var(--text-primary)' }}>Brouillon</option>
+                      <option value="Validé" style={{ color: 'var(--text-primary)' }}>Validé</option>
+                      <option value="Envoyé" style={{ color: 'var(--text-primary)' }}>Envoyé</option>
+                      <option value="Refusé" style={{ color: 'var(--text-primary)' }}>Refusé</option>
+                    </select>
                   </td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>
                     {q.totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}

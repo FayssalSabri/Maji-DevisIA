@@ -316,6 +316,10 @@ html, body, #root {
   flex-shrink: 0;
 }
 
+.step-indicator-mobile {
+  display: none;
+}
+
 /* Upload */
 .upload-zone {
   border: 2px dashed var(--border);
@@ -400,7 +404,9 @@ html, body, #root {
   transition: width 0.3s;
 }
 
-/* Review layout */
+/* Review and Cost layouts */
+.split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; height: 100%; }
+.split-layout-cost { display: grid; grid-template-columns: 1fr 320px; gap: 32px; height: 100%; }
 .review-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .review-section {
   background: var(--bg-secondary);
@@ -722,6 +728,50 @@ html, body, #root {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   line-height: 1.45;
   page-break-after: avoid;
+}
+
+/* ── TECH SHEET ── */
+.pd-tech-header {
+  border-bottom: 2px solid #1a1a2e;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.pd-tech-header-right {
+  text-align: right;
+}
+.pd-tech-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.pd-tech-table {
+  width: 100%;
+  font-size: 12px;
+}
+.pd-tech-summary {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pd-tech-summary-right {
+  text-align: right;
+}
+.pd-tech-footer {
+  margin-top: 32px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+  font-size: 10px;
+  color: #9ca3af;
+  display: flex;
+  justify-content: space-between;
 }
 
 /* ── HEADER ── */
@@ -1103,4 +1153,205 @@ html, body, #root {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #d1d5db;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .layout { flex-direction: column; }
+  .sidebar {
+    order: 2;
+    width: 100%;
+    min-width: auto;
+    height: auto;
+    flex-direction: row;
+    padding: 8px;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    justify-content: space-around;
+    gap: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background: var(--bg-primary);
+    z-index: 50;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  }
+  .sidebar-logo { display: none; }
+  .sidebar-section { display: none; }
+  .sidebar-spacer { display: none; }
+  .sidebar-item { 
+    width: auto; 
+    flex-direction: column; 
+    padding: 6px; 
+    font-size: 10px; 
+    gap: 4px; 
+    justify-content: center; 
+    text-align: center; 
+    border-radius: 8px;
+  }
+  .sidebar-item svg { width: 20px; height: 20px; margin: 0 auto; }
+  
+  .main-content { 
+    order: 1; 
+    flex: 1; 
+    overflow: hidden; 
+  }
+  
+  .page-header { 
+    padding: 16px; 
+    flex-direction: row; 
+    align-items: center; 
+  }
+  .page-header h1 { font-size: 18px; }
+  .page-header-sub { font-size: 12px; }
+  
+  .page-body { 
+    padding: 16px 16px 80px 16px; /* Extra bottom padding for bottom nav */
+  }
+  
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cost-grid { grid-template-columns: 1fr; gap: 16px; }
+  .review-layout { grid-template-columns: 1fr; gap: 16px; }
+  .settings-grid { grid-template-columns: 1fr; gap: 16px; }
+  .split-layout { grid-template-columns: 1fr; height: auto; gap: 16px; }
+  .split-layout-cost { grid-template-columns: 1fr; height: auto; gap: 16px; }
+  .mobile-hidden { display: none !important; }
+  .pd-action-bar { flex-direction: column; gap: 8px; }
+  .pd-action-bar .btn { width: 100%; }
+  
+  .upload-zone { padding: 32px 16px; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; gap: 16px; }
+
+  .step-indicator-desktop { display: none !important; }
+  .step-indicator-mobile {
+    display: block;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+  .mobile-step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .mobile-step-count {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    letter-spacing: 0.5px;
+  }
+  .mobile-step-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .mobile-step-progress-bg {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .mobile-step-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  
+  .pd-paper-bg {
+    justify-content: flex-start;
+    padding: 16px 8px;
+    border-radius: 8px;
+    overflow-x: hidden;
+  }
+  .pd-scale-wrapper {
+    width: 100%;
+    transform: none;
+    margin-bottom: 0;
+  }
+  .pd-page {
+    width: 100%;
+    min-height: auto;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  
+  .pd-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .pd-header-right {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .pd-two-col, .pd-tech-grid {
+    grid-template-columns: 1fr;
+  }
+  .pd-specs-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pd-spec-item:nth-child(4n) {
+    border-right: 1px solid #f3f4f6;
+  }
+  .pd-spec-item:nth-child(2n) {
+    border-right: none;
+  }
+  .pd-spec-item:nth-last-child(-n+4) {
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .pd-spec-item:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+  .pd-totals-wrap {
+    justify-content: flex-start;
+  }
+  .pd-totals-box {
+    width: 100%;
+  }
+  .pd-cond-grid {
+    grid-template-columns: 1fr;
+  }
+  .pd-footer {
+    position: static;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 32px;
+    padding: 16px 0;
+  }
+  .pd-tech-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .pd-tech-header-right {
+    text-align: left;
+  }
+  .pd-tech-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .pd-tech-summary-right {
+    text-align: left;
+  }
+  .pd-tech-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pd-cost-table, .pd-tech-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table-wrap { overflow-x: auto; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
 }

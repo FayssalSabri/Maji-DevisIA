@@ -192,8 +192,21 @@ export function AppProvider({ children }) {
     }
   };
 
+  const updateQuotationStatus = async (quoteId, newStatus) => {
+    try {
+      await fetch(`${API_BASE}/history/${quoteId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      await fetchHistory(); // Refresh
+    } catch (err) {
+      console.error("Failed to update quotation status", err);
+    }
+  };
+
   return (
-    <AppContext.Provider value={{ state, dispatch, simulateExtraction, calculateCosts, runValidation, fetchHistory, saveQuotation }}>
+    <AppContext.Provider value={{ state, dispatch, simulateExtraction, calculateCosts, runValidation, fetchHistory, saveQuotation, updateQuotationStatus }}>
       {children}
     </AppContext.Provider>
   );

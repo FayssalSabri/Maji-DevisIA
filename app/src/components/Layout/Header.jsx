@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, User } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { UserButton } from '@clerk/react';
 
 export const Header = ({ title, subtitle }) => {
   return (
@@ -12,9 +13,16 @@ export const Header = ({ title, subtitle }) => {
         <button className="btn btn-ghost" style={{ padding: '8px' }}>
           <Bell size={18} />
         </button>
-        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
-          <User size={16} color="var(--text-secondary)" />
-        </div>
+        <UserButton 
+          appearance={{
+            elements: {
+              userButtonAvatarBox: {
+                width: '32px',
+                height: '32px',
+              }
+            }
+          }}
+        />
       </div>
     </header>
   );

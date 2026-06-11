@@ -22,10 +22,10 @@ export const ExtractionStep = () => {
   }, [steps.length]);
 
   return (
-    <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', height: '100%' }}>
+    <div className="fade-in split-layout">
       
       {/* PDF Preview Sidebar */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="mobile-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
         <h3 style={{ fontSize: '14px', marginBottom: '12px' }}>Fichier en cours d'analyse : {state.currentWizard.file?.name}</h3>
         <div className="pdf-viewer">
           {/* We use object to preview the PDF. It relies on the browser's PDF plugin */}
