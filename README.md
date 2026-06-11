@@ -4,7 +4,7 @@ MAJI AI is an advanced, industrial-grade B2B SaaS platform designed to automate 
 
 By combining a sleek, professional frontend with an AI-powered Python backend, MAJI AI automatically extracts specifications from technical drawings and computes highly accurate manufacturing costs based on industrial benchmarks.
 
-## 🏗️ Architecture
+## Architecture
 
 The project is structured into two main components:
 
@@ -19,7 +19,7 @@ The project is structured into two main components:
   - Contains deterministic costing logic and consistency-validation hooks.
   - Tech Stack: FastAPI, PyMuPDF, Groq, Pytest.
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Backend Setup
 
