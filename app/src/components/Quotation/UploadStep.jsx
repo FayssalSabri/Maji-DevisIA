@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { UploadCloud, FileType2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export const UploadStep = () => {
   const { dispatch, simulateExtraction } = useAppContext();
   const [dragActive, setDragActive] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const fileInputRef = useRef(null);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -16,12 +18,37 @@ export const UploadStep = () => {
     }
   };
 
+  const validateAndProcessFile = (file) => {
+    setErrorMsg("");
+    
+    // Validate type
+    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
+      setErrorMsg("Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.");
+      return;
+    }
+    
+    // Validate size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg("Fichier trop volumineux. La taille maximale est de 10MB.");
+      return;
+    }
+
+    processFile({ name: file.name, nativeFile: file });
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile({ name: e.dataTransfer.files[0].name, nativeFile: e.dataTransfer.files[0] });
+      validateAndProcessFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      validateAndProcessFile(e.target.files[0]);
     }
   };
 
@@ -37,12 +64,28 @@ export const UploadStep = () => {
         Déposez le PDF du plan client. L'IA va automatiquement extraire la cartouche, la matière et les dimensions.
       </p>
 
+      {errorMsg && (
+        <div style={{ padding: '12px', background: 'var(--error-bg, #fee2e2)', color: 'var(--error, #ef4444)', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+          {errorMsg}
+        </div>
+      )}
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+        onChange={handleFileChange}
+      />
+
       <div 
         className={`upload-zone ${dragActive ? 'dragover' : ''}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
+        onClick={() => fileInputRef.current.click()}
+        style={{ cursor: 'pointer' }}
       >
         <UploadCloud />
         <h3>Cliquez ou glissez un fichier ici</h3>

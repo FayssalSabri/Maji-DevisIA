@@ -5,6 +5,7 @@ import { NewQuotationPage } from './pages/NewQuotationPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Show, SignIn } from '@clerk/react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function AppContent() {
   const [currentRoute, setCurrentRoute] = useState('dashboard');
@@ -22,15 +23,17 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
-      <Show when="signed-in">
-        <AppContent />
-      </Show>
-      <Show when="signed-out">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', flex: 1, background: 'var(--bg-secondary)' }}>
-          <img src="/maji-logo-vert.png" alt="Maji" style={{ height: '48px', marginBottom: '32px' }} />
-          <SignIn routing="virtual" />
-        </div>
-      </Show>
+      <ErrorBoundary>
+        <Show when="signed-in">
+          <AppContent />
+        </Show>
+        <Show when="signed-out">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', flex: 1, background: 'var(--bg-secondary)' }}>
+            <img src="/maji-logo-vert.png" alt="Maji" style={{ height: '48px', marginBottom: '32px' }} />
+            <SignIn routing="virtual" />
+          </div>
+        </Show>
+      </ErrorBoundary>
     </AppProvider>
   );
 }

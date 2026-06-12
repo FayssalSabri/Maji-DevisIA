@@ -1,4 +1,8 @@
+import math
+import logging
 from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
 
 def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -19,17 +23,25 @@ def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, 
     margin_pct = params.get('defaultMargin', 0.25)
     machine_overhead = params.get('machineOverhead', 1.0)
 
+    # Normalize margin (if provided as 25 instead of 0.25)
+    if margin_pct > 1:
+        margin_pct = margin_pct / 100.0
+
     mat_type = material_spec.get('type', 'Steel')
     thickness = material_spec.get('thickness', 2.0)
 
     # ══════════════════════════════════════════════════════
     # 1. MATERIAL COST
-    #    Mass = Length × Width × Thickness × Density
-    #    Steel density ≈ 7.85 × 10⁻⁶ kg/mm³ (= 7.85 kg/dm³)
-    #    Base cost: €2.50/kg (industrial steel benchmark)
     # ══════════════════════════════════════════════════════
-    density = densities.get(mat_type, 7.85)  # kg/dm³
-    material_rate = material_rates.get(mat_type, 2.50)  # €/kg
+    density = densities.get(mat_type)
+    if density is None:
+        logger.warning(f"Material '{mat_type}' not found in densities. Defaulting to 7.85 (Steel).")
+        density = 7.85
+        
+    material_rate = material_rates.get(mat_type)
+    if material_rate is None:
+        logger.warning(f"Material rate for '{mat_type}' not found. Defaulting to €2.50/kg.")
+        material_rate = 2.50
 
     length = dimensions.get('length', 0)
     width = dimensions.get('width', 0)
@@ -51,37 +63,43 @@ def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, 
 
     # ══════════════════════════════════════════════════════
     # 2. LASER CUTTING COST
-    #    Based on total cutting length (perimeter + hole cutouts)
-    #    Base rate: €0.15 per mm of cut
     # ══════════════════════════════════════════════════════
     cutting_length = dimensions.get('cuttingLength', 0)
     if cutting_length <= 0:
         cutting_length = (length + width) * 2  # Perimeter approximation
 
-    # Add hole perimeters to cutting length
-    import math
     hole_cutting_length = sum(
         math.pi * h.get('diameter', 0) * h.get('quantity', 0) for h in holes
     )
     total_cutting_length = cutting_length + hole_cutting_length
 
-    cutting_rate_per_mm = 0.15  # €/mm
-    cutting_cost = total_cutting_length * cutting_rate_per_mm * machine_overhead
+    # Use parameter or default
+    cutting_speed = times.get('cuttingSpeed', 2000)
+    cutting_rate = machine_rates.get('laser', 85)
+    
+    # Actually calculate time based on length/speed, then cost based on rate
+    cutting_time_min = total_cutting_length / cutting_speed if cutting_speed > 0 else 0
+    cutting_cost = (cutting_time_min / 60) * cutting_rate * machine_overhead
 
     # ══════════════════════════════════════════════════════
-    # 3. BENDING / PRESS BRAKE COST
-    #    Fixed fee per bend line
-    #    Base rate: €1.50 per bend
+    # 3. HOLES COST
+    # ══════════════════════════════════════════════════════
+    per_hole_time = times.get('perHole', 0.1)
+    total_holes = sum(h.get('quantity', 0) for h in holes)
+    holes_time_min = total_holes * per_hole_time
+    holes_cost = (holes_time_min / 60) * cutting_rate * machine_overhead
+
+    # ══════════════════════════════════════════════════════
+    # 4. BENDING / PRESS BRAKE COST
     # ══════════════════════════════════════════════════════
     total_bends = sum(b.get('quantity', 0) for b in bends)
-    bend_rate = 1.50  # €/bend
-    bending_cost = total_bends * bend_rate
+    per_bend_time = times.get('perBend', 0.5)
+    bending_rate = machine_rates.get('bending', 65)
+    bending_time_min = total_bends * per_bend_time
+    bending_cost = (bending_time_min / 60) * bending_rate * machine_overhead
 
     # ══════════════════════════════════════════════════════
-    # 4. SURFACE TREATMENT / INDUSTRIAL PAINTING
-    #    Fixed masking/processing fee per piece
-    #    Minimum 0.0004 m² processing area
-    #    Base rate: €3.00 flat fee per piece
+    # 5. SURFACE TREATMENT
     # ══════════════════════════════════════════════════════
     dev_surface_m2 = dimensions.get('developedSurface', 0)
     if dev_surface_m2 <= 0 and length > 0 and width > 0:
@@ -89,19 +107,10 @@ def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, 
     surface_treatment_cost = 3.00 if dev_surface_m2 >= 0.0004 else 0.00
 
     # ══════════════════════════════════════════════════════
-    # 5. LABOR & OVERHEAD SETUP
-    #    Setup time amortized + operational hourly labor rate
+    # 6. LABOR & OVERHEAD SETUP
     # ══════════════════════════════════════════════════════
     setup_laser_min = times.get('setupLaser', 15)
     setup_bending_min = times.get('setupBending', 20) if total_bends > 0 else 0
-    cutting_speed = times.get('cuttingSpeed', 2000)  # mm/min
-    per_bend_time = times.get('perBend', 0.5)
-    per_hole_time = times.get('perHole', 0.1)
-
-    total_holes = sum(h.get('quantity', 0) for h in holes)
-    cutting_time_min = total_cutting_length / cutting_speed if cutting_speed > 0 else 0
-    bending_time_min = total_bends * per_bend_time
-    holes_time_min = total_holes * per_hole_time
 
     total_machine_time_min = (
         setup_laser_min + setup_bending_min +
@@ -112,7 +121,7 @@ def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, 
     # ══════════════════════════════════════════════════════
     # TOTALS
     # ══════════════════════════════════════════════════════
-    subtotal = material_cost + cutting_cost + bending_cost + surface_treatment_cost + labor_cost
+    subtotal = material_cost + cutting_cost + holes_cost + bending_cost + surface_treatment_cost + labor_cost
     margin_amount = subtotal * margin_pct
     total_ht = subtotal + margin_amount
     vat_rate = 0.20
@@ -122,6 +131,7 @@ def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, 
     return {
         "material": round(material_cost, 2),
         "cutting": round(cutting_cost, 2),
+        "holes": round(holes_cost, 2),
         "bending": round(bending_cost, 2),
         "surfaceTreatment": round(surface_treatment_cost, 2),
         "labor": round(labor_cost, 2),

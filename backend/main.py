@@ -1,13 +1,22 @@
 import os
 import json
 import datetime
-from fastapi import FastAPI, UploadFile, File, Form, Body
+import uuid
+import tempfile
+import logging
+from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, Any, List
+from typing import List
 
 from services.ai_service import extract_specs_from_file, chat_with_ai
 from services.cost_service import calculate_costs
 from services.validation_service import validate_quotation
+from models import CalculateRequest, ValidateRequest, ChatRequest, SaveQuotationRequest, UpdateStatusRequest, APIResponse
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Maji AI Backend", version="1.0.0")
 
@@ -15,12 +24,25 @@ DB_DIR = "data"
 os.makedirs(DB_DIR, exist_ok=True)
 DB_FILE = os.path.join(DB_DIR, "database.json")
 
-def load_db():
+# Startup check
+@app.on_event("startup")
+async def startup_event():
+    # Check for required API keys
+    api_keys = [
+        os.getenv("GEMINI_API_KEY"),
+        os.getenv("GROQ_API_KEY"),
+        os.getenv("OPENROUTER_API_KEY")
+    ]
+    if not any(api_keys):
+        logger.warning("No AI API keys configured! System will run in mock mode or fail on extraction.")
+
+def load_db() -> List[dict]:
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
             try:
                 return json.load(f)
             except json.JSONDecodeError:
+                logger.error("Failed to decode database.json. Loading empty list.")
                 pass
     # Default mock data
     default_data = [
@@ -43,97 +65,111 @@ def load_db():
     save_db(default_data)
     return default_data
 
-def save_db(data):
-    with open(DB_FILE, "w") as f:
+def save_db(data: List[dict]):
+    # Atomic write
+    fd, temp_path = tempfile.mkstemp(dir=DB_DIR, prefix="db_", suffix=".tmp")
+    with os.fdopen(fd, 'w') as f:
         json.dump(data, f, indent=4)
-
-db_quotations = load_db()
+    os.replace(temp_path, DB_FILE)
 
 # Allow requests from the Vite frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["http://localhost:5173", "http://localhost:80"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/api/health")
+@app.get("/api/health", response_model=APIResponse)
 async def health_check():
-    return {"status": "ok"}
+    return {"status": "success", "data": "ok"}
 
-@app.post("/api/extract")
+@app.post("/api/extract", response_model=APIResponse)
 async def extract_pdf(file: UploadFile = File(...)):
     """
-    Receives a PDF/Image, sends it to Groq. Uses vision if no text is present.
+    Receives a PDF/Image, sends it to AI.
     """
-    content = await file.read()
-    filename = file.filename
+    if file.size and file.size > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large. Max 50MB allowed.")
     
-    specs = extract_specs_from_file(content, filename)
-    
-    return {"status": "success", "data": specs}
+    allowed_types = ["application/pdf", "image/png", "image/jpeg", "image/jpg"]
+    if file.content_type not in allowed_types and not file.filename.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=415, detail="Unsupported file type. Use PDF, PNG, or JPG.")
 
-@app.post("/api/calculate")
-async def calculate_quote(payload: Dict[str, Any] = Body(...)):
-    specs = payload.get("specs", {})
-    params = payload.get("parameters", {})
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large. Max 50MB allowed.")
+
+    filename = file.filename
+    logger.info(f"Extracting specs from {filename}")
     
-    costs = calculate_costs(specs, params)
-    
+    try:
+        specs = extract_specs_from_file(content, filename)
+        return {"status": "success", "data": specs}
+    except Exception as e:
+        logger.error(f"Extraction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/calculate", response_model=APIResponse)
+async def calculate_quote(payload: CalculateRequest):
+    costs = calculate_costs(payload.specs.model_dump(), payload.parameters)
     return {"status": "success", "data": costs}
 
-@app.post("/api/validate")
-async def validate_quote(payload: Dict[str, Any] = Body(...)):
-    specs = payload.get("specs", {})
-    costs = payload.get("costs", {})
-    
-    validation_result = validate_quotation(specs, costs)
-    
+@app.post("/api/validate", response_model=APIResponse)
+async def validate_quote(payload: ValidateRequest):
+    validation_result = validate_quotation(payload.specs.model_dump(), payload.costs)
     return {"status": "success", "data": validation_result}
 
-@app.post("/api/chat")
-async def chat_interaction(payload: Dict[str, Any] = Body(...)):
-    message = payload.get("message", "")
-    context = payload.get("context", {})
-    history = payload.get("history", [])
-    
-    response_text = chat_with_ai(message, context, history)
-    
+@app.post("/api/chat", response_model=APIResponse)
+async def chat_interaction(payload: ChatRequest):
+    response_text = chat_with_ai(payload.message, payload.context, payload.history)
     return {"status": "success", "data": response_text}
 
-@app.get("/api/history")
+@app.get("/api/history", response_model=APIResponse)
 async def get_history():
+    db_quotations = load_db()
     sorted_history = sorted(db_quotations, key=lambda x: x["date"], reverse=True)
     return {"status": "success", "data": sorted_history}
 
-@app.post("/api/history")
-async def save_quotation(payload: Dict[str, Any] = Body(...)):
-    new_quote = {
-        "id": payload.get("id"),
-        "reference": payload.get("reference", "N/A"),
-        "designation": payload.get("designation", "Sans nom"),
-        "client": payload.get("client", "N/A"),
-        "date": datetime.datetime.now().isoformat(),
-        "status": payload.get("status", "Validé"),
-        "observation": payload.get("observation", ""),
-        "totalCost": payload.get("totalCost", 0),
-        "margin": payload.get("margin", 25),
-        "specs": payload.get("specs", {}),
-        "costs": payload.get("costs", {})
-    }
+@app.post("/api/history", response_model=APIResponse)
+async def save_quotation(payload: SaveQuotationRequest):
+    db_quotations = load_db()
+    
+    new_quote = payload.model_dump()
+    if not new_quote.get("id"):
+        new_quote["id"] = f"DEV-{datetime.datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+    new_quote["date"] = datetime.datetime.now().isoformat()
+    
+    # Check if exists, update if so
+    for i, q in enumerate(db_quotations):
+        if q["id"] == new_quote["id"]:
+            db_quotations[i] = new_quote
+            save_db(db_quotations)
+            return {"status": "success", "data": new_quote}
+            
     db_quotations.insert(0, new_quote)
     save_db(db_quotations)
     return {"status": "success", "data": new_quote}
 
-@app.put("/api/history/{quote_id}/status")
-async def update_quotation_status(quote_id: str, payload: Dict[str, Any] = Body(...)):
-    new_status = payload.get("status")
+@app.put("/api/history/{quote_id}/status", response_model=APIResponse)
+async def update_quotation_status(quote_id: str, payload: UpdateStatusRequest):
+    db_quotations = load_db()
     for q in db_quotations:
         if q["id"] == quote_id:
-            q["status"] = new_status
+            q["status"] = payload.status
             save_db(db_quotations)
             return {"status": "success", "data": q}
-    from fastapi.responses import JSONResponse
-    return JSONResponse(status_code=404, content={"status": "error", "message": "Quotation not found"})
+    raise HTTPException(status_code=404, detail="Quotation not found")
+
+@app.delete("/api/history/{quote_id}", response_model=APIResponse)
+async def delete_quotation(quote_id: str):
+    db_quotations = load_db()
+    original_len = len(db_quotations)
+    db_quotations = [q for q in db_quotations if q["id"] != quote_id]
+    
+    if len(db_quotations) == original_len:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+        
+    save_db(db_quotations)
+    return {"status": "success", "data": {"id": quote_id, "deleted": True}}
 

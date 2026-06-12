@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Download, Send, FileText, Briefcase } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
@@ -15,7 +15,7 @@ export const PreviewStep = ({ setRoute }) => {
   const [observation, setObservation] = useState('');
 
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const refDevis = `DEV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const refDevis = useMemo(() => `DEV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`, []);
   const validUntil = new Date();
   validUntil.setDate(validUntil.getDate() + 30);
   const validUntilStr = validUntil.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });

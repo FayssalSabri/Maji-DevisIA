@@ -84,9 +84,14 @@ export const ValidationStep = () => {
         <h2 style={{ fontSize: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <ShieldCheck color="var(--accent)" /> Bilan de Cohérence IA
         </h2>
-        <button className="btn btn-primary" onClick={handleNext}>
-          Valider & Générer le PDF <ArrowRight />
-        </button>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button className="btn btn-secondary" onClick={() => dispatch({ type: 'SET_STEP', payload: 3 })}>
+            Corriger les données
+          </button>
+          <button className="btn btn-primary" onClick={handleNext}>
+            Valider & Générer <ArrowRight />
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>

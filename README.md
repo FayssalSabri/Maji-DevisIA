@@ -1,5 +1,7 @@
 # MAJI AI Quotation Assistant
 
+![Maji AI](./app/public/maji-logo-vert.png)
+
 MAJI AI is an advanced, industrial-grade B2B SaaS platform designed to automate and streamline the quotation (devis) process for manufacturing companies (sheet metal, machining, etc.).
 
 By combining a sleek, professional frontend with an AI-powered Python backend, MAJI AI automatically extracts specifications from technical drawings and computes highly accurate manufacturing costs based on industrial benchmarks.
@@ -61,7 +63,7 @@ npm run dev
 ```
 The application will be available at `http://localhost:5173`.
 
-## 🧪 Testing
+## Testing
 
 The backend calculation and AI extraction schemas are strictly monitored through unit tests to prevent numerical calculation drifting over UI iterations.
 
@@ -71,7 +73,7 @@ cd backend
 python -m pytest tests/ -v
 ```
 
-## 🛠️ GitHub Best Practices Enforced
+## GitHub Best Practices Enforced
 
 - **`.gitignore` configured**: Excludes all `node_modules/`, `venv/`, `__pycache__/`, `.env` keys, and sensitive logs from version control.
 - **Modularity**: Frontend and Backend are decoupled to allow independent CI/CD deployments.

@@ -1,38 +1,52 @@
-import React, { createContext, useReducer, useContext } from 'react';
+import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { defaultCostParameters } from '../data/costParameters';
+import { calculateCosts as fallbackCalculateCosts } from '../utils/costCalculator';
 
 const AppContext = createContext();
 
-const initialState = {
-  quotations: [],
-  parameters: defaultCostParameters,
-  currentWizard: {
-    step: 1, // 1: Upload, 2: Extract, 3: Review, 4: Cost, 5: Validate, 6: Preview
-    file: null,
-    specs: null, 
-    costs: null,
-    validation: null,
-    isProcessing: false,
-    error: null
-  }
+const loadInitialState = () => {
+  const savedParams = localStorage.getItem('maji_parameters');
+  const savedQuotations = localStorage.getItem('maji_quotations');
+  return {
+    quotations: savedQuotations ? JSON.parse(savedQuotations) : [],
+    parameters: savedParams ? JSON.parse(savedParams) : defaultCostParameters,
+    currentWizard: {
+      step: 1,
+      file: null,
+      specs: null, 
+      costs: null,
+      validation: null,
+      isProcessing: false,
+      error: null
+    }
+  };
 };
 
+const initialState = loadInitialState();
+
 function reducer(state, action) {
+  let newState;
   switch (action.type) {
     case 'SET_HISTORY':
-      return { ...state, quotations: action.payload };
+      newState = { ...state, quotations: action.payload };
+      break;
     case 'SET_STEP':
-      return { ...state, currentWizard: { ...state.currentWizard, step: action.payload } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, step: action.payload } };
+      break;
     case 'UPLOAD_FILE':
-      return { ...state, currentWizard: { ...state.currentWizard, file: action.payload, step: 2 } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, file: action.payload, step: 2, error: null } };
+      break;
     case 'SET_PROCESSING':
-      return { ...state, currentWizard: { ...state.currentWizard, isProcessing: action.payload } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, isProcessing: action.payload } };
+      break;
     case 'SET_ERROR':
-      return { ...state, currentWizard: { ...state.currentWizard, error: action.payload, isProcessing: false } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, error: action.payload, isProcessing: false } };
+      break;
     case 'SET_SPECS':
-      return { ...state, currentWizard: { ...state.currentWizard, specs: action.payload, isProcessing: false, step: 3 } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, specs: action.payload, isProcessing: false, step: 3, error: null } };
+      break;
     case 'UPDATE_SPEC':
-      return { 
+      newState = { 
         ...state, 
         currentWizard: { 
           ...state.currentWizard, 
@@ -45,14 +59,18 @@ function reducer(state, action) {
           } 
         } 
       };
+      break;
     case 'SET_COSTS':
-      return { ...state, currentWizard: { ...state.currentWizard, costs: action.payload } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, costs: action.payload } };
+      break;
     case 'SET_VALIDATION':
-      return { ...state, currentWizard: { ...state.currentWizard, validation: action.payload, isProcessing: false } };
+      newState = { ...state, currentWizard: { ...state.currentWizard, validation: action.payload, isProcessing: false, error: null } };
+      break;
     case 'RESET_WIZARD':
-      return { ...state, currentWizard: initialState.currentWizard };
+      newState = { ...state, currentWizard: initialState.currentWizard };
+      break;
     case 'LOAD_QUOTATION':
-      return { 
+      newState = { 
         ...state, 
         currentWizard: { 
           ...state.currentWizard, 
@@ -62,8 +80,9 @@ function reducer(state, action) {
           file: { url: '/piece_003.pdf', name: 'piece_003.pdf' } 
         } 
       };
+      break;
     case 'UPDATE_PARAMETER':
-      return {
+      newState = {
         ...state,
         parameters: {
           ...state.parameters,
@@ -73,17 +92,25 @@ function reducer(state, action) {
           }
         }
       };
+      break;
     case 'UPDATE_ROOT_PARAMETER':
-        return {
+        newState = {
           ...state,
           parameters: {
             ...state.parameters,
             [action.payload.field]: action.payload.value
           }
         };
+        break;
     default:
       return state;
   }
+  
+  if (action.type === 'SET_HISTORY') {
+    localStorage.setItem('maji_quotations', JSON.stringify(newState.quotations));
+  }
+  
+  return newState;
 }
 
 export function AppProvider({ children }) {
@@ -91,6 +118,10 @@ export function AppProvider({ children }) {
 
   // Using relative path so Nginx (Prod) or Vite Proxy (Dev) routes it correctly
   const API_BASE = '/api';
+
+  const saveParameters = () => {
+    localStorage.setItem('maji_parameters', JSON.stringify(state.parameters));
+  };
 
   // 1. Extraction (FastAPI + Gemini)
   const simulateExtraction = async (fileObj) => {
@@ -113,17 +144,17 @@ export function AppProvider({ children }) {
         body: formData
       });
 
-      if (!res.ok) throw new Error('Failed to extract data');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Failed to extract data');
+      }
       const result = await res.json();
       
-      // Simulate the 4 second visual processing UX before advancing
-      setTimeout(() => {
-        dispatch({ type: 'SET_SPECS', payload: result.data });
-      }, 3000);
+      dispatch({ type: 'SET_SPECS', payload: result.data });
 
     } catch (err) {
       console.error(err);
-      dispatch({ type: 'SET_ERROR', payload: "L'extraction a échoué. Backend injoignable." });
+      dispatch({ type: 'SET_ERROR', payload: `L'extraction a échoué: ${err.message}` });
     }
   };
 
@@ -139,9 +170,15 @@ export function AppProvider({ children }) {
         const result = await res.json();
         dispatch({ type: 'SET_COSTS', payload: result.data });
         return result.data;
+      } else {
+        throw new Error('API Error');
       }
     } catch (err) {
       console.error("Local fallback calculation due to API error", err);
+      // Fallback
+      const fallbackCosts = fallbackCalculateCosts(specs, parameters);
+      dispatch({ type: 'SET_COSTS', payload: fallbackCosts });
+      return fallbackCosts;
     }
   };
 
@@ -156,9 +193,9 @@ export function AppProvider({ children }) {
       });
       if (res.ok) {
         const result = await res.json();
-        setTimeout(() => {
-          dispatch({ type: 'SET_VALIDATION', payload: result.data });
-        }, 1500); // 1.5s UX delay
+        dispatch({ type: 'SET_VALIDATION', payload: result.data });
+      } else {
+        throw new Error('API Error');
       }
     } catch (err) {
       console.error("Validation failed", err);
@@ -205,8 +242,30 @@ export function AppProvider({ children }) {
     }
   };
 
+  const deleteQuotation = async (quoteId) => {
+    try {
+      await fetch(`${API_BASE}/history/${quoteId}`, {
+        method: 'DELETE'
+      });
+      await fetchHistory();
+    } catch (err) {
+      console.error("Failed to delete quotation", err);
+    }
+  };
+
   return (
-    <AppContext.Provider value={{ state, dispatch, simulateExtraction, calculateCosts, runValidation, fetchHistory, saveQuotation, updateQuotationStatus }}>
+    <AppContext.Provider value={{ 
+      state, 
+      dispatch, 
+      simulateExtraction, 
+      calculateCosts, 
+      runValidation, 
+      fetchHistory, 
+      saveQuotation, 
+      updateQuotationStatus,
+      deleteQuotation,
+      saveParameters
+    }}>
       {children}
     </AppContext.Provider>
   );

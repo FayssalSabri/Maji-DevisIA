@@ -25,7 +25,7 @@ export const sampleQuotations = [
     designation: 'PLATINE SUPPORT FIXATION',
     client: 'Safran',
     date: '2026-03-26T09:00:00',
-    status: 'Draft',
+    status: 'Brouillon',
     totalCost: 320.00,
     margin: 30,
   }

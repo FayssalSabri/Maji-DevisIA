@@ -1,14 +1,60 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Layout } from '../components/Layout/Layout';
 import { useAppContext } from '../context/AppContext';
-import { Search, Filter, Download } from 'lucide-react';
+import { Search, Filter, Download, Trash2 } from 'lucide-react';
 
 export const HistoryPage = ({ currentRoute, setRoute }) => {
-  const { state, fetchHistory, dispatch, updateQuotationStatus } = useAppContext();
+  const { state, fetchHistory, dispatch, updateQuotationStatus, deleteQuotation } = useAppContext();
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  const filteredQuotations = useMemo(() => {
+    if (!searchTerm) return state.quotations;
+    const lower = searchTerm.toLowerCase();
+    return state.quotations.filter(q => 
+      (q.reference && q.reference.toLowerCase().includes(lower)) ||
+      (q.client && q.client.toLowerCase().includes(lower)) ||
+      (q.designation && q.designation.toLowerCase().includes(lower)) ||
+      (q.id && q.id.toLowerCase().includes(lower))
+    );
+  }, [state.quotations, searchTerm]);
+
+  const exportCSV = () => {
+    if (filteredQuotations.length === 0) return;
+    
+    const headers = ['ID Devis', 'Client', 'Reference', 'Designation', 'Date', 'Statut', 'Montant HT'];
+    const rows = filteredQuotations.map(q => [
+      q.id,
+      `"${q.client || ''}"`,
+      `"${q.reference || ''}"`,
+      `"${q.designation || ''}"`,
+      new Date(q.date).toLocaleDateString('fr-FR'),
+      q.status,
+      q.totalCost
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(',') + '\n' 
+      + rows.map(e => e.join(',')).join('\n');
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "historique_devis_maji.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce devis ?")) {
+      deleteQuotation(id);
+    }
+  };
+
   return (
     <Layout 
       title="Historique des devis" 
@@ -21,11 +67,20 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
           <div style={{ display: 'flex', gap: '16px', width: '60%' }}>
             <div className="form-group" style={{ margin: 0, flex: 1, position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--text-tertiary)' }} />
-              <input type="text" className="form-input" placeholder="Rechercher par référence, client..." style={{ paddingLeft: '36px' }} />
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Rechercher par référence, client..." 
+                style={{ paddingLeft: '36px' }} 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
             </div>
             <button className="btn btn-secondary"><Filter size={16} /> Filtres</button>
           </div>
-          <button className="btn btn-secondary"><Download size={16} /> Exporter CSV</button>
+          <button className="btn btn-secondary" onClick={exportCSV} disabled={filteredQuotations.length === 0}>
+            <Download size={16} /> Exporter CSV
+          </button>
         </div>
 
         <div className="table-wrap">
@@ -39,12 +94,19 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
                 <th>Date</th>
                 <th>Statut</th>
                 <th style={{ textAlign: 'right' }}>Montant HT</th>
-                <th></th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-            {state.quotations.map(q => (
-              <tr key={q.id}>
+            {filteredQuotations.length === 0 ? (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-tertiary)' }}>
+                  Aucun devis trouvé.
+                </td>
+              </tr>
+            ) : (
+              filteredQuotations.map(q => (
+                <tr key={q.id}>
                   <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{q.id}</span></td>
                   <td style={{ fontWeight: 500 }}>{q.client}</td>
                   <td>{q.reference}</td>
@@ -82,7 +144,7 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>
                     {q.totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ textAlign: 'center', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                     <button 
                       className="btn btn-ghost btn-sm"
                       onClick={() => {
@@ -96,9 +158,17 @@ export const HistoryPage = ({ currentRoute, setRoute }) => {
                     >
                       Ouvrir
                     </button>
+                    <button 
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => handleDelete(q.id)}
+                      style={{ color: 'var(--error)' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
         </div>

@@ -48,7 +48,7 @@ export const validateQuotation = (specs, costs) => {
 
   // 4. Feasibility (Bending radius vs thickness)
   let bendingIssue = false;
-  specs.bends.forEach(b => {
+  (specs.bends || []).forEach(b => {
     if (b.radius < specs.material.thickness) {
       bendingIssue = true;
     }

@@ -1,37 +1,50 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ main, master ]
 
 jobs:
-  build-and-test:
+  backend-test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker Compose services
-        run: |
-          docker compose build
+      - uses: actions/checkout@v4
       
-      - name: Lint and Test Frontend (Optional)
-        working-directory: ./app
-        run: |
-          # If you have tests, you can run them here
-          npm install
-          npm run build
-          # npm test
-
-      - name: Lint and Test Backend (Optional)
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          
+      - name: Install dependencies
         working-directory: ./backend
         run: |
-          # If you have tests, you can run them here
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # pytest
+          
+      - name: Run tests with pytest
+        working-directory: ./backend
+        run: |
+          python -m pytest tests/ -v
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: './app/package-lock.json'
+          
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+        
+      - name: Build project
+        working-directory: ./app
+        run: npm run build
