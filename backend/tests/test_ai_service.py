@@ -3,6 +3,7 @@ import json
 from unittest.mock import patch, MagicMock
 from services.ai_service import extract_specs_from_file, get_mock_extraction
 
+@patch("services.ai_service.GROQ_API_KEY", "dummy_key")
 @patch("services.ai_service.extract_text_from_file")
 @patch("services.ai_service.groq_client")
 def test_extract_specs_groq_success(mock_groq_client, mock_extract_text):
@@ -24,6 +25,7 @@ def test_extract_specs_groq_success(mock_groq_client, mock_extract_text):
     assert result["material"]["type"] == "Steel"
     assert "confidences" in result
 
+@patch("services.ai_service.GROQ_API_KEY", "dummy_key")
 @patch("services.ai_service.extract_text_from_file")
 @patch("services.ai_service.groq_client")
 def test_extract_specs_malformed_json(mock_groq_client, mock_extract_text):
