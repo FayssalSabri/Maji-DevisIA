@@ -139,6 +139,10 @@ export function AppProvider({ children }) {
         formData.append('file', fileObj.nativeFile);
       }
 
+      if (fileObj.useMock) {
+        formData.append('use_mock', 'true');
+      }
+
       const res = await fetch(`${API_BASE}/extract`, {
         method: 'POST',
         body: formData
@@ -149,6 +153,11 @@ export function AppProvider({ children }) {
         throw new Error(errData.detail || 'Failed to extract data');
       }
       const result = await res.json();
+      
+      // Add a realistic delay when using mock data to simulate AI processing time
+      if (fileObj.useMock) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
       
       dispatch({ type: 'SET_SPECS', payload: result.data });
 

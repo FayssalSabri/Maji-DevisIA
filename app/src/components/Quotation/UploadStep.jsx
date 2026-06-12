@@ -6,6 +6,8 @@ export const UploadStep = () => {
   const { dispatch, simulateExtraction } = useAppContext();
   const [dragActive, setDragActive] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  // Dev flag: set to true to bypass AI and use instant mock data
+  const USE_MOCK = true;
   const fileInputRef = useRef(null);
 
   const handleDrag = (e) => {
@@ -20,14 +22,14 @@ export const UploadStep = () => {
 
   const validateAndProcessFile = (file) => {
     setErrorMsg("");
-    
+
     // Validate type
     const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
       setErrorMsg("Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.");
       return;
     }
-    
+
     // Validate size (10MB)
     if (file.size > 10 * 1024 * 1024) {
       setErrorMsg("Fichier trop volumineux. La taille maximale est de 10MB.");
@@ -54,7 +56,7 @@ export const UploadStep = () => {
 
   const processFile = (fileObj) => {
     dispatch({ type: 'UPLOAD_FILE', payload: fileObj });
-    simulateExtraction(fileObj);
+    simulateExtraction({ ...fileObj, useMock: USE_MOCK });
   };
 
   return (
@@ -70,15 +72,15 @@ export const UploadStep = () => {
         </div>
       )}
 
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        style={{ display: 'none' }} 
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
         accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
         onChange={handleFileChange}
       />
 
-      <div 
+      <div
         className={`upload-zone ${dragActive ? 'dragover' : ''}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -95,8 +97,8 @@ export const UploadStep = () => {
       <div style={{ marginTop: '32px' }}>
         <h3 style={{ fontSize: '14px', marginBottom: '12px' }}>Ou utiliser un exemple récent</h3>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             style={{ flex: 1, padding: '16px', justifyContent: 'flex-start' }}
             onClick={() => processFile({ name: 'piece_003.pdf', url: '/piece_003.pdf' })}
           >

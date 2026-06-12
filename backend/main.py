@@ -4,12 +4,12 @@ import datetime
 import uuid
 import tempfile
 import logging
-from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 
-from services.ai_service import extract_specs_from_file, chat_with_ai
+from services.ai_service import extract_specs_from_file, chat_with_ai, get_mock_extraction
 from services.cost_service import calculate_costs
 from services.validation_service import validate_quotation
 from models import CalculateRequest, ValidateRequest, ChatRequest, SaveQuotationRequest, UpdateStatusRequest, APIResponse
@@ -85,10 +85,14 @@ async def health_check():
     return {"status": "success", "data": "ok"}
 
 @app.post("/api/extract", response_model=APIResponse)
-async def extract_pdf(file: UploadFile = File(...)):
+async def extract_pdf(file: UploadFile = File(...), use_mock: bool = Form(False)):
     """
     Receives a PDF/Image, sends it to AI.
     """
+    if use_mock:
+        logger.info("Mock extraction requested by client")
+        return {"status": "success", "data": get_mock_extraction()}
+
     if file.size and file.size > 50 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large. Max 50MB allowed.")
     

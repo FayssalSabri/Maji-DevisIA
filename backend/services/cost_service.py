@@ -47,13 +47,14 @@ def calculate_costs(specs: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, 
     width = dimensions.get('width', 0)
     volume_mm3 = dimensions.get('volume', 0)
 
-    if volume_mm3 > 0:
-        volume_dm3 = volume_mm3 / 1_000_000
-    elif length > 0 and width > 0:
+    if length > 0 and width > 0 and thickness > 0:
         volume_dm3 = (length * width * thickness) / 1_000_000
     else:
         dev_surface = dimensions.get('developedSurface', 0)
-        volume_dm3 = dev_surface * thickness
+        if dev_surface > 0:
+            volume_dm3 = dev_surface * thickness
+        else:
+            volume_dm3 = volume_mm3 / 1_000_000
 
     calculated_mass = volume_dm3 * density  # kg
     extracted_mass_g = dimensions.get('mass', 0)

@@ -6,10 +6,12 @@ export const calculateCosts = (specs, params) => {
   const materialRate = params.materialRates[specs.material?.type] || 1.20;
   
   let volumeDm3 = 0;
-  if (specs.dimensions?.developedSurface > 0) {
+  if ((specs.dimensions?.length > 0) && (specs.dimensions?.width > 0) && (specs.material?.thickness > 0)) {
+    volumeDm3 = (specs.dimensions.length * specs.dimensions.width * specs.material.thickness) / 1000000;
+  } else if (specs.dimensions?.developedSurface > 0) {
     volumeDm3 = specs.dimensions.developedSurface * (specs.material?.thickness || 0);
   } else {
-    volumeDm3 = ((specs.dimensions?.length || 0) * (specs.dimensions?.width || 0) * (specs.material?.thickness || 0)) / 1000000;
+    volumeDm3 = (specs.dimensions?.volume || 0) / 1000000;
   }
   
   const calculatedMass = volumeDm3 * density;

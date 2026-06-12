@@ -100,7 +100,7 @@ Rules:
 - Extract the designation/title of the part
 - Parse all hole diameters, bend angles/radii, and dimensions you can find
 - Parse tolerance standards (ISO, etc.)
-- For volume and mass, estimate from dimensions if not explicitly stated
+- Do NOT calculate or estimate volume and mass. Only extract them if they are explicitly written on the drawing!
 """
 
     max_retries = 2
