@@ -34,3 +34,5 @@ backend/database.json
 docs/
 app/.agents/skills
 app/skills-lock.json
+
+presentation/
