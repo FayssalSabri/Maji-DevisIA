@@ -75,6 +75,8 @@ class SaveQuotationRequest(BaseModel):
     @field_validator('margin')
     @classmethod
     def validate_margin(cls, v: float) -> float:
+        if v < 0 or v > 100:
+            raise ValueError("Margin must be between 0 and 100")
         return v
 
 class UpdateStatusRequest(BaseModel):

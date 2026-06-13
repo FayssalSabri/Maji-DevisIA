@@ -13,7 +13,7 @@ __pycache__/
 .env.local
 backend/.env
 app/.env
-
+backend/maji-devisai-firebase-adminsdk-fbsvc-7bc769fe26.json
 # Builds
 dist/
 build/

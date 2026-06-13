@@ -1,4 +1,5 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
+import { useAuth } from '@clerk/react';
 import { defaultCostParameters } from '../data/costParameters';
 import { calculateCosts as fallbackCalculateCosts } from '../utils/costCalculator';
 
@@ -75,6 +76,9 @@ function reducer(state, action) {
         currentWizard: { 
           ...state.currentWizard, 
           step: 6, 
+          id: action.payload.id,
+          status: action.payload.status,
+          observation: action.payload.observation,
           specs: action.payload.specs, 
           costs: action.payload.costs,
           file: { url: '/piece_003.pdf', name: 'piece_003.pdf' } 
@@ -115,9 +119,18 @@ function reducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { getToken } = useAuth();
 
   // Using relative path so Nginx (Prod) or Vite Proxy (Dev) routes it correctly
   const API_BASE = '/api';
+  
+  const getAuthHeaders = async (additionalHeaders = {}) => {
+    const token = await getToken();
+    return {
+      'Authorization': `Bearer ${token}`,
+      ...additionalHeaders
+    };
+  };
 
   const saveParameters = () => {
     localStorage.setItem('maji_parameters', JSON.stringify(state.parameters));
@@ -143,8 +156,10 @@ export function AppProvider({ children }) {
         formData.append('use_mock', 'true');
       }
 
+      const headers = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/extract`, {
         method: 'POST',
+        headers,
         body: formData
       });
 
@@ -170,9 +185,10 @@ export function AppProvider({ children }) {
   // 2. Cost Calculation
   const calculateCosts = async (specs, parameters) => {
     try {
+      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
       const res = await fetch(`${API_BASE}/calculate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ specs, parameters })
       });
       if (res.ok) {
@@ -195,9 +211,10 @@ export function AppProvider({ children }) {
   const runValidation = async (specs, costs) => {
     dispatch({ type: 'SET_PROCESSING', payload: true });
     try {
+      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
       const res = await fetch(`${API_BASE}/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ specs, costs })
       });
       if (res.ok) {
@@ -215,7 +232,8 @@ export function AppProvider({ children }) {
   // 4. History API
   const fetchHistory = async () => {
     try {
-      const res = await fetch(`${API_BASE}/history`);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/history`, { headers });
       if (res.ok) {
         const result = await res.json();
         dispatch({ type: 'SET_HISTORY', payload: result.data });
@@ -227,9 +245,10 @@ export function AppProvider({ children }) {
 
   const saveQuotation = async (quotationData) => {
     try {
+      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
       await fetch(`${API_BASE}/history`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(quotationData)
       });
       await fetchHistory(); // Refresh
@@ -240,9 +259,10 @@ export function AppProvider({ children }) {
 
   const updateQuotationStatus = async (quoteId, newStatus) => {
     try {
+      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
       await fetch(`${API_BASE}/history/${quoteId}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ status: newStatus })
       });
       await fetchHistory(); // Refresh
@@ -253,8 +273,10 @@ export function AppProvider({ children }) {
 
   const deleteQuotation = async (quoteId) => {
     try {
+      const headers = await getAuthHeaders();
       await fetch(`${API_BASE}/history/${quoteId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       await fetchHistory();
     } catch (err) {
