@@ -11,11 +11,13 @@ export const PreviewStep = ({ setRoute }) => {
   const commercialPdfRef = useRef(null);
   
   const [activeTab, setActiveTab] = useState('commercial'); // 'technical' | 'commercial'
-  const [status, setStatus] = useState('Brouillon');
-  const [observation, setObservation] = useState('');
+  const [status, setStatus] = useState(state.currentWizard.status || 'Brouillon');
+  const [observation, setObservation] = useState(state.currentWizard.observation || '');
 
   const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const refDevis = useMemo(() => `DEV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`, []);
+  
+  // Use existing ID if loading from history, otherwise generate new one
+  const refDevis = useMemo(() => state.currentWizard.id || `DEV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`, [state.currentWizard.id]);
   const validUntil = new Date();
   validUntil.setDate(validUntil.getDate() + 30);
   const validUntilStr = validUntil.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -92,6 +94,7 @@ export const PreviewStep = ({ setRoute }) => {
               <option value="Brouillon">Brouillon</option>
               <option value="Validé">Validé (Interne)</option>
               <option value="Envoyé">Envoyé au client</option>
+              <option value="Refusé">Refusé</option>
             </select>
           </div>
           <div className="form-group" style={{ margin: 0 }}>
@@ -108,23 +111,34 @@ export const PreviewStep = ({ setRoute }) => {
       </div>
 
       {/* ── ACTION BAR ── */}
-      <div className="pd-action-bar">
-        <button 
-          className="btn btn-secondary" 
-          onClick={() => {
-            alert("✅ Webhook déclenché avec succès !\n\nLe devis a été synchronisé avec Odoo / Salesforce (Simulation API MVP).");
-          }}
-          title="Push to CRM/ERP"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          Sync CRM
-        </button>
-        <button className="btn btn-secondary" onClick={handleExportPDF}>
-          <Download size={16} /> Exporter PDF
-        </button>
-        <button className="btn btn-primary" onClick={handleFinish}>
-          <Send size={16} /> Finaliser & Enregistrer
-        </button>
+      <div className="pd-action-bar" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+        <div>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => dispatch({ type: 'SET_STEP', payload: 5 })}
+            title="Retour à la validation"
+          >
+            Retour
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => {
+              alert("✅ Webhook déclenché avec succès !\n\nLe devis a été synchronisé avec Odoo / Salesforce (Simulation API MVP).");
+            }}
+            title="Push to CRM/ERP"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Sync CRM
+          </button>
+          <button className="btn btn-secondary" onClick={handleExportPDF}>
+            <Download size={16} /> Exporter PDF
+          </button>
+          <button className="btn btn-primary" onClick={handleFinish}>
+            <Send size={16} /> {state.currentWizard.id ? 'Enregistrer les modifications' : 'Finaliser & Enregistrer'}
+          </button>
+        </div>
       </div>
 
       {/* ── TAB CONTENT: TECHNICAL COSTING SHEET (Internal) ── */}

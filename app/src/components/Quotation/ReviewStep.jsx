@@ -23,9 +23,14 @@ export const ReviewStep = () => {
       <div style={{ overflowY: 'auto', paddingRight: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2 style={{ fontSize: '18px' }}>Vérification des données</h2>
-          <button className="btn btn-primary" onClick={handleNext}>
-            Valider et Chiffrer <ArrowRight />
-          </button>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <button className="btn btn-secondary" onClick={() => dispatch({ type: 'SET_STEP', payload: 1 })}>
+              Retour à l'import
+            </button>
+            <button className="btn btn-primary" onClick={handleNext}>
+              Valider et Chiffrer <ArrowRight />
+            </button>
+          </div>
         </div>
 
         <div className="review-layout" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

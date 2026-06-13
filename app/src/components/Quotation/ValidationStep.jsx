@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
+import { useAuth } from '@clerk/react';
 import { ArrowRight, CheckCircle2, AlertTriangle, XCircle, ShieldCheck, Send, MessageSquare } from 'lucide-react';
 
 export const ValidationStep = () => {
   const { state, dispatch, runValidation } = useAppContext();
+  const { getToken } = useAuth();
   
   // Chat state
   const [chatHistory, setChatHistory] = useState([
@@ -45,9 +47,13 @@ export const ValidationStep = () => {
         validation: state.currentWizard.validation
       };
 
+      const token = await getToken();
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           message: userMsg,
           context: context,
@@ -88,7 +94,13 @@ export const ValidationStep = () => {
           <button className="btn btn-secondary" onClick={() => dispatch({ type: 'SET_STEP', payload: 3 })}>
             Corriger les données
           </button>
-          <button className="btn btn-primary" onClick={handleNext}>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleNext}
+            disabled={validationResult.status === 'error'}
+            style={validationResult.status === 'error' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+            title={validationResult.status === 'error' ? "Génération bloquée : des erreurs majeures doivent être corrigées." : ""}
+          >
             Valider & Générer <ArrowRight />
           </button>
         </div>
