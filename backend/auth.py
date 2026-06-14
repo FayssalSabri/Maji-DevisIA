@@ -10,8 +10,8 @@ security = HTTPBearer()
 # Simple cache for JWKS to avoid fetching it on every request
 jwks_cache = {}
 
-async def get_jwks(issuer: str):
-    if issuer in jwks_cache:
+async def get_jwks(issuer: str, force_refresh: bool = False):
+    if not force_refresh and issuer in jwks_cache:
         return jwks_cache[issuer]
     
     jwks_url = f"{issuer}/.well-known/jwks.json"
@@ -39,19 +39,25 @@ async def verify_clerk_token(credentials: HTTPAuthorizationCredentials = Securit
             
         jwks = await get_jwks(issuer)
         
-        # Find the public key matching the kid
-        rsa_key = {}
-        for key in jwks["keys"]:
-            if key["kid"] == unverified_header["kid"]:
-                rsa_key = {
-                    "kty": key["kty"],
-                    "kid": key["kid"],
-                    "use": key["use"],
-                    "n": key["n"],
-                    "e": key["e"]
-                }
-                break
+        def find_rsa_key(jwks_data, kid_str):
+            for key in jwks_data["keys"]:
+                if key["kid"] == kid_str:
+                    return {
+                        "kty": key["kty"],
+                        "kid": key["kid"],
+                        "use": key["use"],
+                        "n": key["n"],
+                        "e": key["e"]
+                    }
+            return None
+        
+        rsa_key = find_rsa_key(jwks, unverified_header["kid"])
                 
+        if not rsa_key:
+            # Key might have rotated, force refresh the JWKS cache
+            jwks = await get_jwks(issuer, force_refresh=True)
+            rsa_key = find_rsa_key(jwks, unverified_header["kid"])
+            
         if not rsa_key:
             raise HTTPException(status_code=401, detail="Unable to find appropriate key")
             

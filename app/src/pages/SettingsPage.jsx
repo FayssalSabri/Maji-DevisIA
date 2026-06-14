@@ -11,49 +11,69 @@ export const SettingsPage = ({ currentRoute, setRoute }) => {
     dispatch({ type: 'UPDATE_PARAMETER', payload: { category, field, value } });
   };
 
-  const handleSave = () => {
-    saveParameters();
-    alert("✅ Paramètres enregistrés avec succès.");
+  const handleSave = async () => {
+    try {
+      await saveParameters();
+      alert('✅ Paramètres globaux enregistrés avec succès sur le serveur.');
+    } catch (e) {
+      alert('Erreur lors de la sauvegarde.');
+    }
   };
 
   return (
-    <Layout 
-      title="Paramètres Métier" 
-      subtitle="Configuration des coûts et hypothèses de chiffrage"
+    <Layout
+      title="Configuration Globale (Admin)"
+      subtitle="Configuration centrale des coûts et hypothèses de chiffrage pour toute l'entreprise"
       currentRoute={currentRoute}
       setRoute={setRoute}
     >
-      <div className="fade-in" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-        <button className="btn btn-primary" onClick={handleSave}><Save size={16} /> Enregistrer les paramètres</button>
+      <div
+        className="fade-in"
+        style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}
+      >
+        <button className="btn btn-primary" onClick={handleSave}>
+          <Save size={16} /> Enregistrer les paramètres
+        </button>
       </div>
 
       <div className="settings-grid">
-        
         {/* Machine Rates */}
         <div className="settings-section">
           <div className="settings-section-title">Taux Horaires Machines (€/h)</div>
           <div className="form-group">
             <label className="form-label">Découpe Laser</label>
-            <input 
-              type="number" min="0" className="form-input" 
+            <input
+              type="number"
+              min="0"
+              className="form-input"
               value={params.machineRates.laser}
-              onChange={e => updateParam('machineRates', 'laser', parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                updateParam('machineRates', 'laser', parseFloat(e.target.value) || 0)
+              }
             />
           </div>
           <div className="form-group">
             <label className="form-label">Pliage / Presse</label>
-            <input 
-              type="number" min="0" className="form-input" 
+            <input
+              type="number"
+              min="0"
+              className="form-input"
               value={params.machineRates.bending}
-              onChange={e => updateParam('machineRates', 'bending', parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                updateParam('machineRates', 'bending', parseFloat(e.target.value) || 0)
+              }
             />
           </div>
           <div className="form-group">
             <label className="form-label">Poinçonnage</label>
-            <input 
-              type="number" min="0" className="form-input" 
+            <input
+              type="number"
+              min="0"
+              className="form-input"
               value={params.machineRates.punching}
-              onChange={e => updateParam('machineRates', 'punching', parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                updateParam('machineRates', 'punching', parseFloat(e.target.value) || 0)
+              }
             />
           </div>
         </div>
@@ -64,10 +84,13 @@ export const SettingsPage = ({ currentRoute, setRoute }) => {
           {Object.entries(params.materialRates).map(([mat, price]) => (
             <div className="form-group" key={mat}>
               <label className="form-label">{mat}</label>
-              <input 
-                type="number" min="0" step="0.1" className="form-input" 
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                className="form-input"
                 value={price}
-                onChange={e => updateParam('materialRates', mat, parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateParam('materialRates', mat, parseFloat(e.target.value) || 0)}
               />
             </div>
           ))}
@@ -78,27 +101,42 @@ export const SettingsPage = ({ currentRoute, setRoute }) => {
           <div className="settings-section-title">Temps Opératoires & M.O.</div>
           <div className="form-group">
             <label className="form-label">Taux Horaire Main d'Œuvre (€/h)</label>
-            <input 
-              type="number" min="0" className="form-input" 
+            <input
+              type="number"
+              min="0"
+              className="form-input"
               value={params.laborRate}
-              onChange={e => dispatch({ type: 'UPDATE_ROOT_PARAMETER', payload: { field: 'laborRate', value: parseFloat(e.target.value) || 0 } })}
+              onChange={(e) =>
+                dispatch({
+                  type: 'UPDATE_ROOT_PARAMETER',
+                  payload: { field: 'laborRate', value: parseFloat(e.target.value) || 0 }
+                })
+              }
             />
           </div>
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Réglage Laser (min)</label>
-              <input 
-                type="number" min="0" className="form-input" 
+              <input
+                type="number"
+                min="0"
+                className="form-input"
                 value={params.times.setupLaser}
-                onChange={e => updateParam('times', 'setupLaser', parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  updateParam('times', 'setupLaser', parseFloat(e.target.value) || 0)
+                }
               />
             </div>
             <div className="form-group">
               <label className="form-label">Réglage Pliage (min)</label>
-              <input 
-                type="number" min="0" className="form-input" 
+              <input
+                type="number"
+                min="0"
+                className="form-input"
                 value={params.times.setupBending}
-                onChange={e => updateParam('times', 'setupBending', parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  updateParam('times', 'setupBending', parseFloat(e.target.value) || 0)
+                }
               />
             </div>
           </div>
@@ -109,14 +147,23 @@ export const SettingsPage = ({ currentRoute, setRoute }) => {
           <div className="settings-section-title">Paramètres Globaux</div>
           <div className="form-group">
             <label className="form-label">Marge Globale par Défaut (%)</label>
-            <input 
-              type="number" min="0" className="form-input" 
+            <input
+              type="number"
+              min="0"
+              className="form-input"
               value={params.defaultMargin ? params.defaultMargin * 100 : 25}
-              onChange={e => dispatch({ type: 'UPDATE_ROOT_PARAMETER', payload: { field: 'defaultMargin', value: (parseFloat(e.target.value) || 0) / 100 } })}
+              onChange={(e) =>
+                dispatch({
+                  type: 'UPDATE_ROOT_PARAMETER',
+                  payload: {
+                    field: 'defaultMargin',
+                    value: (parseFloat(e.target.value) || 0) / 100
+                  }
+                })
+              }
             />
           </div>
         </div>
-
       </div>
     </Layout>
   );

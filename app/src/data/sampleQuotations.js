@@ -6,8 +6,8 @@ export const sampleQuotations = [
     client: 'Renault Group',
     date: '2026-03-25T13:29:29',
     status: 'Validé',
-    totalCost: 145.20,
-    margin: 25,
+    totalCost: 145.2,
+    margin: 25
   },
   {
     id: 'Q-2026-03-02',
@@ -16,8 +16,8 @@ export const sampleQuotations = [
     client: 'Alstom',
     date: '2026-03-24T10:15:00',
     status: 'Envoyé',
-    totalCost: 1250.50,
-    margin: 20,
+    totalCost: 1250.5,
+    margin: 20
   },
   {
     id: 'Q-2026-03-03',
@@ -26,7 +26,7 @@ export const sampleQuotations = [
     client: 'Safran',
     date: '2026-03-26T09:00:00',
     status: 'Brouillon',
-    totalCost: 320.00,
-    margin: 30,
+    totalCost: 320.0,
+    margin: 30
   }
 ];

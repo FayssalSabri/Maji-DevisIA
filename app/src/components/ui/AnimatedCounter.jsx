@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-export const AnimatedCounter = ({ value, prefix = '', suffix = '', decimals = 2, duration = 500 }) => {
+export const AnimatedCounter = ({
+  value,
+  prefix = '',
+  suffix = '',
+  decimals = 2,
+  duration = 500
+}) => {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -15,11 +21,11 @@ export const AnimatedCounter = ({ value, prefix = '', suffix = '', decimals = 2,
       if (!start) start = timestamp;
       const progress = timestamp - start;
       const percentage = Math.min(progress / duration, 1);
-      
+
       // Easing function (easeOutQuad)
       const easePercentage = percentage * (2 - percentage);
-      
-      setDisplayValue(initialValue + (diff * easePercentage));
+
+      setDisplayValue(initialValue + diff * easePercentage);
 
       if (percentage < 1) {
         window.requestAnimationFrame(step);

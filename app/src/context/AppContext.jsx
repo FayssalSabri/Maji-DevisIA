@@ -2,6 +2,7 @@ import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { useAuth } from '@clerk/react';
 import { defaultCostParameters } from '../data/costParameters';
 import { calculateCosts as fallbackCalculateCosts } from '../utils/costCalculator';
+import * as api from '../services/api';
 
 const AppContext = createContext();
 
@@ -14,7 +15,7 @@ const loadInitialState = () => {
     currentWizard: {
       step: 1,
       file: null,
-      specs: null, 
+      specs: null,
       costs: null,
       validation: null,
       isProcessing: false,
@@ -35,54 +36,80 @@ function reducer(state, action) {
       newState = { ...state, currentWizard: { ...state.currentWizard, step: action.payload } };
       break;
     case 'UPLOAD_FILE':
-      newState = { ...state, currentWizard: { ...state.currentWizard, file: action.payload, step: 2, error: null } };
+      newState = {
+        ...state,
+        currentWizard: { ...state.currentWizard, file: action.payload, step: 2, error: null }
+      };
       break;
     case 'SET_PROCESSING':
-      newState = { ...state, currentWizard: { ...state.currentWizard, isProcessing: action.payload } };
+      newState = {
+        ...state,
+        currentWizard: { ...state.currentWizard, isProcessing: action.payload }
+      };
       break;
     case 'SET_ERROR':
-      newState = { ...state, currentWizard: { ...state.currentWizard, error: action.payload, isProcessing: false } };
+      newState = {
+        ...state,
+        currentWizard: { ...state.currentWizard, error: action.payload, isProcessing: false }
+      };
       break;
     case 'SET_SPECS':
-      newState = { ...state, currentWizard: { ...state.currentWizard, specs: action.payload, isProcessing: false, step: 3, error: null } };
+      newState = {
+        ...state,
+        currentWizard: {
+          ...state.currentWizard,
+          specs: action.payload,
+          isProcessing: false,
+          step: 3,
+          error: null
+        }
+      };
       break;
     case 'UPDATE_SPEC':
-      newState = { 
-        ...state, 
-        currentWizard: { 
-          ...state.currentWizard, 
-          specs: { 
-            ...state.currentWizard.specs, 
+      newState = {
+        ...state,
+        currentWizard: {
+          ...state.currentWizard,
+          specs: {
+            ...state.currentWizard.specs,
             [action.payload.category]: {
               ...state.currentWizard.specs[action.payload.category],
               [action.payload.field]: action.payload.value
             }
-          } 
-        } 
+          }
+        }
       };
       break;
     case 'SET_COSTS':
       newState = { ...state, currentWizard: { ...state.currentWizard, costs: action.payload } };
       break;
     case 'SET_VALIDATION':
-      newState = { ...state, currentWizard: { ...state.currentWizard, validation: action.payload, isProcessing: false, error: null } };
+      newState = {
+        ...state,
+        currentWizard: {
+          ...state.currentWizard,
+          validation: action.payload,
+          isProcessing: false,
+          error: null
+        }
+      };
       break;
     case 'RESET_WIZARD':
       newState = { ...state, currentWizard: initialState.currentWizard };
       break;
     case 'LOAD_QUOTATION':
-      newState = { 
-        ...state, 
-        currentWizard: { 
-          ...state.currentWizard, 
-          step: 6, 
+      newState = {
+        ...state,
+        currentWizard: {
+          ...state.currentWizard,
+          step: 6,
           id: action.payload.id,
           status: action.payload.status,
           observation: action.payload.observation,
-          specs: action.payload.specs, 
+          specs: action.payload.specs,
           costs: action.payload.costs,
-          file: { url: '/piece_003.pdf', name: 'piece_003.pdf' } 
-        } 
+          file: { url: '/piece_003.pdf', name: 'piece_003.pdf' }
+        }
       };
       break;
     case 'UPDATE_PARAMETER':
@@ -98,22 +125,28 @@ function reducer(state, action) {
       };
       break;
     case 'UPDATE_ROOT_PARAMETER':
-        newState = {
-          ...state,
-          parameters: {
-            ...state.parameters,
-            [action.payload.field]: action.payload.value
-          }
-        };
-        break;
+      newState = {
+        ...state,
+        parameters: {
+          ...state.parameters,
+          [action.payload.field]: action.payload.value
+        }
+      };
+      break;
+    case 'SET_PARAMETERS':
+      newState = {
+        ...state,
+        parameters: action.payload
+      };
+      break;
     default:
       return state;
   }
-  
+
   if (action.type === 'SET_HISTORY') {
     localStorage.setItem('maji_quotations', JSON.stringify(newState.quotations));
   }
-  
+
   return newState;
 }
 
@@ -121,182 +154,140 @@ export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { getToken } = useAuth();
 
-  // Using relative path so Nginx (Prod) or Vite Proxy (Dev) routes it correctly
-  const API_BASE = '/api';
-  
-  const getAuthHeaders = async (additionalHeaders = {}) => {
-    const token = await getToken();
-    return {
-      'Authorization': `Bearer ${token}`,
-      ...additionalHeaders
-    };
+  const fetchConfig = async () => {
+    try {
+      const token = await getToken();
+      const result = await api.getConfigApi(token);
+      if (result.data && Object.keys(result.data).length > 0) {
+        dispatch({ type: 'SET_PARAMETERS', payload: result.data });
+      }
+    } catch (err) {
+      console.error('Failed to load global config', err);
+    }
   };
 
-  const saveParameters = () => {
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const saveParameters = async () => {
     localStorage.setItem('maji_parameters', JSON.stringify(state.parameters));
+    try {
+      const token = await getToken();
+      await api.saveConfigApi(token, state.parameters);
+    } catch (err) {
+      console.error('Failed to save config globally', err);
+    }
   };
 
-  // 1. Extraction (FastAPI + Gemini)
   const simulateExtraction = async (fileObj) => {
     dispatch({ type: 'SET_PROCESSING', payload: true });
-    
     try {
-      let formData = new FormData();
-      
-      // If we are passing the mock file from public
-      if (fileObj.url) {
-        const response = await fetch(fileObj.url);
-        const blob = await response.blob();
-        formData.append('file', blob, fileObj.name);
-      } else if (fileObj.nativeFile) {
-        formData.append('file', fileObj.nativeFile);
-      }
-
+      const token = await getToken();
+      const result = await api.extractData(token, fileObj);
       if (fileObj.useMock) {
-        formData.append('use_mock', 'true');
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
-
-      const headers = await getAuthHeaders();
-      const res = await fetch(`${API_BASE}/extract`, {
-        method: 'POST',
-        headers,
-        body: formData
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || 'Failed to extract data');
-      }
-      const result = await res.json();
-      
-      // Add a realistic delay when using mock data to simulate AI processing time
-      if (fileObj.useMock) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      }
-      
       dispatch({ type: 'SET_SPECS', payload: result.data });
-
     } catch (err) {
       console.error(err);
       dispatch({ type: 'SET_ERROR', payload: `L'extraction a échoué: ${err.message}` });
     }
   };
 
-  // 2. Cost Calculation
   const calculateCosts = async (specs, parameters) => {
     try {
-      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
-      const res = await fetch(`${API_BASE}/calculate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ specs, parameters })
-      });
-      if (res.ok) {
-        const result = await res.json();
-        dispatch({ type: 'SET_COSTS', payload: result.data });
-        return result.data;
-      } else {
-        throw new Error('API Error');
-      }
+      const token = await getToken();
+      const result = await api.calculateCostsApi(token, specs, parameters);
+      dispatch({ type: 'SET_COSTS', payload: result.data });
+      return result.data;
     } catch (err) {
-      console.error("Local fallback calculation due to API error", err);
-      // Fallback
+      console.error('Local fallback calculation due to API error', err);
       const fallbackCosts = fallbackCalculateCosts(specs, parameters);
       dispatch({ type: 'SET_COSTS', payload: fallbackCosts });
       return fallbackCosts;
     }
   };
 
-  // 3. Validation
   const runValidation = async (specs, costs) => {
     dispatch({ type: 'SET_PROCESSING', payload: true });
     try {
-      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
-      const res = await fetch(`${API_BASE}/validate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ specs, costs })
-      });
-      if (res.ok) {
-        const result = await res.json();
-        dispatch({ type: 'SET_VALIDATION', payload: result.data });
-      } else {
-        throw new Error('API Error');
-      }
+      const token = await getToken();
+      const result = await api.runValidationApi(token, specs, costs);
+      dispatch({ type: 'SET_VALIDATION', payload: result.data });
     } catch (err) {
-      console.error("Validation failed", err);
-      dispatch({ type: 'SET_ERROR', payload: "Validation API Error" });
+      console.error('Validation failed', err);
+      dispatch({ type: 'SET_ERROR', payload: 'Validation API Error' });
     }
   };
 
-  // 4. History API
   const fetchHistory = async () => {
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`${API_BASE}/history`, { headers });
-      if (res.ok) {
-        const result = await res.json();
-        dispatch({ type: 'SET_HISTORY', payload: result.data });
-      }
+      const token = await getToken();
+      const result = await api.fetchHistoryApi(token);
+      dispatch({ type: 'SET_HISTORY', payload: result.data });
     } catch (err) {
-      console.error("Failed to load history", err);
+      console.error('Failed to load history', err);
     }
   };
 
   const saveQuotation = async (quotationData) => {
     try {
-      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
-      await fetch(`${API_BASE}/history`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(quotationData)
-      });
-      await fetchHistory(); // Refresh
+      const token = await getToken();
+      await api.saveQuotationApi(token, quotationData);
+      await fetchHistory();
     } catch (err) {
-      console.error("Failed to save quotation", err);
+      console.error('Failed to save quotation', err);
     }
   };
 
   const updateQuotationStatus = async (quoteId, newStatus) => {
     try {
-      const headers = await getAuthHeaders({ 'Content-Type': 'application/json' });
-      await fetch(`${API_BASE}/history/${quoteId}/status`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ status: newStatus })
-      });
-      await fetchHistory(); // Refresh
+      const token = await getToken();
+      await api.updateQuotationStatusApi(token, quoteId, newStatus);
+      await fetchHistory();
     } catch (err) {
-      console.error("Failed to update quotation status", err);
+      console.error('Failed to update quotation status', err);
     }
   };
 
   const deleteQuotation = async (quoteId) => {
     try {
-      const headers = await getAuthHeaders();
-      await fetch(`${API_BASE}/history/${quoteId}`, {
-        method: 'DELETE',
-        headers
-      });
+      const token = await getToken();
+      await api.deleteQuotationApi(token, quoteId);
       await fetchHistory();
     } catch (err) {
-      console.error("Failed to delete quotation", err);
+      console.error('Failed to delete quotation', err);
+    }
+  };
+
+  const syncERP = async (quoteData) => {
+    try {
+      const token = await getToken();
+      const result = await api.syncERPApi(token, quoteData);
+      return result;
+    } catch (err) {
+      console.error('Failed to sync ERP', err);
+      throw err;
     }
   };
 
   return (
-    <AppContext.Provider value={{ 
-      state, 
-      dispatch, 
-      simulateExtraction, 
-      calculateCosts, 
-      runValidation, 
-      fetchHistory, 
-      saveQuotation, 
-      updateQuotationStatus,
-      deleteQuotation,
-      saveParameters
-    }}>
+    <AppContext.Provider
+      value={{
+        state,
+        dispatch,
+        simulateExtraction,
+        calculateCosts,
+        runValidation,
+        fetchHistory,
+        saveQuotation,
+        updateQuotationStatus,
+        deleteQuotation,
+        saveParameters,
+        syncERP
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

@@ -14,8 +14,8 @@ export const NewQuotationPage = ({ currentRoute, setRoute }) => {
   const step = state.currentWizard.step;
 
   return (
-    <Layout 
-      title="Nouveau Devis IA" 
+    <Layout
+      title="Nouveau Devis IA"
       subtitle="Génération assistée à partir d'un plan"
       currentRoute={currentRoute}
       setRoute={setRoute}
