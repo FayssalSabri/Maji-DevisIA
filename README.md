@@ -1,33 +1,62 @@
 <div align="center">
-  <img src="./app/public/maji-logo-vert.png" alt="Maji-DevisAI Logo" width="150" />
+  <img src="./app/public/maji-logo-vert.png" alt="Maji-DevisAI Logo" width="180" />
 
   # Maji-DevisAI
 
   **Industrial B2B SaaS Platform for Automated Manufacturing Quotations**
 
-  [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](#-recommended-docker-deployment)
-  [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?logo=fastapi&logoColor=white)](#1-backend-setup)
-  [![React](https://img.shields.io/badge/React-18.2.0-61DAFB?logo=react&logoColor=black)](#2-frontend-setup)
-  [![Tests](https://img.shields.io/badge/tests-16%20passed-success?logo=pytest)](#-testing)
+  <p align="center">
+    <a href="#-recommended-docker-deployment"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"></a>
+    <a href="#1-backend-setup"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"></a>
+    <a href="#2-frontend-setup"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"></a>
+    <a href="#-testing--ci"><img src="https://img.shields.io/badge/Tests-Passing-success?style=for-the-badge&logo=pytest" alt="Tests"></a>
+  </p>
+
+  <p>
+    <em>Bridging state-of-the-art AI Vision with deterministic industrial mathematics to calculate precise sheet metal fabrication costs in seconds.</em>
+  </p>
 </div>
+
+---
+
+## Table of Contents
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [System Architecture](#-system-architecture)
+- [Detailed Documentation](#-detailed-documentation)
+  - [Backend Engine](#backend-engine-fastapi)
+  - [Frontend Interface](#frontend-interface-react)
+  - [ERP & Webhooks](#erp-integration)
+- [Getting Started](#-getting-started)
+- [API Reference](#-api-reference)
+- [Testing & CI/CD](#-testing--cicd)
+
+---
 
 ## Overview
 
-Maji-DevisAI is an advanced, industrial-grade B2B SaaS platform specifically designed to automate and streamline the quotation (devis) process for manufacturing companies, with a strong focus on sheet metal fabrication, laser cutting, and bending.
+**Maji-DevisAI** is an advanced, enterprise-grade B2B platform designed to automate the quotation process for manufacturing companies (focusing on sheet metal fabrication, laser cutting, bending, and surface treatments).
 
-By combining a sleek, professional frontend with a deterministic calculation engine and state-of-the-art AI Vision capabilities, MAJI AI can seamlessly extract technical specifications from complex PDF blueprints and generate highly accurate manufacturing costs in seconds.
+By leveraging a dual-engine approach—**AI Vision** for rapid parameter extraction from 2D blueprints and a **Deterministic Cost Engine** for financial precision—Maji AI eliminates the bottlenecks of manual quoting while guaranteeing strictly coherent numerical outputs.
+
+---
 
 ## Key Features
 
-- **AI-Powered Extraction**: Utilizes Google Gemini Vision and Groq (LLaMA 3.3) to read and extract technical parameters (material, dimensions, hole counts, bend radii) directly from 2D blueprints.
-- **Deterministic Cost Engine**: Calculates geometric mass, laser cutting times, bending setup, surface treatment, and labor overhead using industry-standard formulas to guarantee numerical consistency.
-- **AI Consistency Control**: Built-in guardrails cross-reference AI-extracted mass against geometric calculated mass to flag hallucinations or missing data before validation.
-- **Dual-View PDF Generation**: Dynamically generates precise commercial quotes (for clients) and detailed technical production sheets (for the workshop).
-- **Authentication**: Integrated with Clerk for robust, enterprise-ready identity and session management.
+| Feature | Description |
+| :--- | :--- |
+| **AI-Powered Extraction** | Utilizes **Google Gemini Vision** and **Groq (LLaMA 3.3)** to read blueprints and extract specs (material, dimensions, hole counts, bend radii) instantly. |
+| **Deterministic Engine** | Calculates exact geometric mass, cutting times, bending setups, and labor overhead using industry-standard, configurable formulas. |
+| **Anomaly Detection** | Built-in AI guardrails cross-reference extracted vs. calculated masses, flagging missing data or geometric anomalies before validation. |
+| **Global Configuration** | Dedicated Admin Panel for technical directors to globally update machine rates, material costs, and margin templates in real-time. |
+| **ERP Synchronization** | One-click webhook integrations to push validated quotes directly to industrial ERPs (e.g., Clipper, Sylob, SAP). |
+| **Enterprise Auth** | Secured by **Clerk** (JWT & JWKS caching) for robust identity and session management. |
 
-## Architecture
+---
 
-Maji-DevisAI is built on a decoupled, containerized architecture ensuring high scalability and developer velocity.
+## System Architecture
+
+Maji-DevisAI is built on a decoupled, containerized architecture ensuring high scalability, modularity, and rapid developer velocity.
 
 ```mermaid
 graph TD
@@ -40,18 +69,31 @@ graph TD
     end
     
     subgraph Backend Container
-        FastAPI --> PyMuPDF[PyMuPDF parser]
+        FastAPI --> PyMuPDF[PyMuPDF Parser]
         FastAPI --> Groq[Groq / LLaMA API]
         FastAPI --> Gemini[Google Gemini API]
-        FastAPI --> SQLiteDB[(JSON Data Store)]
+        FastAPI --> Firestore[(Firebase/Firestore)]
+        FastAPI --> ERPWebhook[ERP Webhook Emitter]
     end
 ```
 
-### Technology Stack
-- **Frontend**: React 18, Vite, Custom CSS (Glassmorphism & Modern UI), html2pdf.js, Lucide Icons, Clerk.
-- **Backend**: Python 3.10+, FastAPI, PyMuPDF, Pytest.
-- **AI Models**: LLaMA-3.3-70b-versatile (via Groq), Gemini-2.5-Flash (via Google API).
-- **Infrastructure**: Docker, Docker Compose, NGINX, GitHub Actions.
+---
+
+## Detailed Documentation
+
+### Backend Engine (FastAPI)
+The backend operates as the brain of the application. It is highly modular:
+- **`ai_service.py`**: Handles PDF parsing via PyMuPDF. It uses a tiered extraction strategy—trying Gemini Vision first, OpenRouter as a fallback, and Groq for complex text structuring. It features robust Regex-based JSON parsing and token truncation to prevent overflow on massive documents.
+- **`cost_service.py`**: The deterministic heart. It computes exact material volumes, laser cutting perimeters, and labor times based on the **Global Configuration** fetched from the database. No LLM hallucinations are allowed in financial calculations.
+- **`validation_service.py`**: Acts as an automated QA engineer. It compares the AI's extracted weight against the geometric calculated weight. If the deviation exceeds a defined threshold (e.g., >20%), it flags the quote for human review.
+
+### Frontend Interface (React)
+- **Clean & Pro UI**: The interface strictly adheres to B2B SaaS standards. It uses sharp corners, solid distinct colors, subtle shadows, and a highly utilitarian layout to maximize operator efficiency.
+- **State Management**: The wizard flow is orchestrated via `AppContext.jsx`, with API logic cleanly abstracted into `services/api.js`.
+- **Global Settings Panel**: Administrators can navigate to the Settings tab to update material prices and machine rates globally, synchronizing the entire company.
+
+### ERP Integration
+Maji-DevisAI provides a webhook system (`POST /api/webhook/erp`). Validated quotes can be bulk-synced directly to an external ERP system, converting the standardized JSON schema into the required format for immediate production scheduling.
 
 ---
 
@@ -59,37 +101,31 @@ graph TD
 
 ### Prerequisites
 - Docker and Docker Compose (Recommended)
-- Node.js 18+ (For local frontend development)
-- Python 3.10+ (For local backend development)
+- Node.js 18+ (For local frontend)
+- Python 3.10+ (For local backend)
+- API Keys: Clerk, Groq, Google Gemini
 
 ### Recommended: Docker Deployment
 
-The fastest way to run the entire application (Frontend + Backend + Proxy) is via Docker Compose.
-
-1. **Clone the repository** and configure environment variables:
+1. **Clone & Configure**:
    ```bash
    cp backend/.env.example backend/.env
    # Edit backend/.env and insert your API keys (GROQ_API_KEY, GEMINI_API_KEY)
    ```
 
-2. **Build and start the containers**:
+2. **Build and Start**:
    ```bash
    docker compose up -d --build
    ```
 
-3. **Access the application**:
+3. **Access**:
    - Web UI: `http://localhost:80`
-   - Backend Swagger Docs: `http://localhost:80/api/docs`
+   - Backend Docs: `http://localhost:8000/docs`
 
----
+### Local Development
 
-## Local Development Guide
-
-If you prefer to run the services outside of Docker for development purposes:
-
-### 1. Backend Setup
-
-The backend is built with FastAPI and runs on port 8000.
+<details>
+<summary><strong>1. Backend Setup</strong></summary>
 
 ```bash
 cd backend
@@ -100,43 +136,56 @@ pip install -r requirements.txt
 # Start the server with hot-reload
 uvicorn main:app --reload --port 8000
 ```
+</details>
 
-### 2. Frontend Setup
-
-The frontend is a Vite + React application.
+<details>
+<summary><strong>2. Frontend Setup</strong></summary>
 
 ```bash
 cd app
 npm install
 
+# Format code (Prettier)
+npm run format
+
 # Start the development server
 npm run dev
 ```
-The application will be available at `http://localhost:5173`.
+Available at `http://localhost:5173`.
+</details>
 
 ---
 
-## Testing
+## API Reference
 
-The backend calculation and AI extraction schemas are strictly monitored through unit tests. We enforce deterministic math over AI estimations.
+The backend exposes a fully documented OpenAPI specification at `/docs` (or `/redoc`). Key endpoints include:
 
+- `POST /api/extract`: Uploads a PDF/Image and returns a standardized JSON spec sheet.
+- `POST /api/calculate`: Submits specs + config to receive a deterministic cost breakdown.
+- `POST /api/validate`: Cross-references specs and costs for physical anomalies.
+- `GET/POST /api/config`: Retrieves or updates the global company configuration (Admin).
+- `POST /api/webhook/erp`: Triggers synchronization with an external ERP system.
+
+---
+
+## Testing & CI/CD
+
+Maji-DevisAI enforces strict quality control through **GitHub Actions** (`.github/workflows/ci.yml`).
+
+Every push or pull request automatically triggers:
+1. **Backend Tests**: `pytest` validates the AI extraction integrity, schema fallbacks, and the math engine's determinism.
+2. **Frontend Linting**: `eslint` and `prettier --check` ensure the UI codebase remains spotless and standard-compliant.
+
+To run tests locally:
 ```bash
-cd backend
-pytest tests/ -v
+# Backend
+cd backend && pytest tests/ -v
+
+# Frontend
+cd app && npm run lint && npm run format
 ```
 
-The test suite covers:
-- AI Extraction integrity (JSON parsing, fallback mechanisms).
-- Cost Service determinism (Geometric mass priority over AI hallucinations, VAT calculation).
-- Validation Service logic (Tolerance threshold warnings, Missing materials).
-
 ---
-
-## Security & Best Practices
-
-- **Strict Environment Separation**: API Keys are isolated in the `.env` file and never exposed to the frontend.
-- **Payload Validation**: All endpoints use strict Pydantic models (`models.py`) to prevent injection and ensure data integrity.
-- **File Upload Guardrails**: The API rejects files larger than 10MB and validates MIME types before processing.
-
----
-*Developed for industrial quoting performance.*
+<div align="center">
+  <em>Developed for industrial performance and engineering precision.</em>
+</div>
