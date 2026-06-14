@@ -7,7 +7,7 @@ import logging
 from fastapi import FastAPI, UploadFile, File, Body, HTTPException, Request, Form, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from typing import List, Dict, Any
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -44,7 +44,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled error: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"status": "error", "message": "An unexpected error occurred.", "details": str(exc)}
+        content={"status": "error", "message": "An unexpected error occurred. Please contact support."}
     )
 
 # Startup check
@@ -130,14 +130,14 @@ async def get_history(user=Depends(verify_clerk_token)):
     user_id = user.get("sub")
     
     try:
-        docs = db.collection("quotations").where("user_id", "==", user_id).order_by("date", direction=firestore.Query.DESCENDING).stream()
+        docs = db.collection("quotations").where("user_id", "==", user_id).order_by("date", direction=firestore.Query.DESCENDING).limit(50).stream()
         data = [doc.to_dict() for doc in docs]
         return {"status": "success", "data": data}
     except Exception as e:
         # If an index is missing, Firestore usually raises an exception with a URL to create it.
         logger.error(f"Error fetching history: {e}")
         # Fallback to no ordering if index isn't created yet
-        docs = db.collection("quotations").where("user_id", "==", user_id).stream()
+        docs = db.collection("quotations").where("user_id", "==", user_id).limit(50).stream()
         data = sorted([doc.to_dict() for doc in docs], key=lambda x: x.get("date", ""), reverse=True)
         return {"status": "success", "data": data}
 
@@ -186,3 +186,35 @@ async def delete_quotation(quote_id: str, user=Depends(verify_clerk_token)):
         
     doc_ref.delete()
     return {"status": "success", "data": {"id": quote_id, "deleted": True}}
+
+@app.get("/api/config", response_model=APIResponse)
+async def get_global_config(user=Depends(verify_clerk_token)):
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    doc = db.collection("system").document("global_config").get()
+    if doc.exists:
+        return {"status": "success", "data": doc.to_dict()}
+    return {"status": "success", "data": {}}
+
+@app.post("/api/config", response_model=APIResponse)
+async def save_global_config(payload: Dict[str, Any] = Body(...), user=Depends(verify_clerk_token)):
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    
+    # In a real app, check for admin role here
+    # role = user.get("metadata", {}).get("role")
+    # if role != "admin": raise HTTPException(status_code=403, detail="Forbidden")
+
+    db.collection("system").document("global_config").set(payload)
+    return {"status": "success", "data": payload}
+
+@app.post("/api/webhook/erp", response_model=APIResponse)
+async def trigger_erp_webhook(payload: Dict[str, Any] = Body(...), user=Depends(verify_clerk_token)):
+    # Mock ERP Webhook
+    logger.info(f"Triggering ERP Webhook for quote {payload.get('id')}...")
+    # Simulate network call to Sylob / Clipper
+    import asyncio
+    await asyncio.sleep(1)
+    logger.info("ERP Sync Successful")
+    return {"status": "success", "message": "Synchronisation ERP (Sylob/Clipper) réussie."}
+

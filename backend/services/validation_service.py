@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 def get_average_historical_cost() -> float:
     try:
-        db_path = os.path.join("data", "database.json")
+        db_path = "database.json"
         if os.path.exists(db_path):
             with open(db_path, "r") as f:
                 data = json.load(f)
@@ -12,8 +12,8 @@ def get_average_historical_cost() -> float:
                     return 0.0
                 total = sum(q.get("totalCost", 0) for q in data)
                 return total / len(data)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error reading historical cost from database.json: {e}")
     return 0.0
 
 def validate_quotation(specs: Dict[str, Any], costs: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:

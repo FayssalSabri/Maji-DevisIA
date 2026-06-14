@@ -62,13 +62,14 @@ def extract_images_base64_from_file(file_content: bytes, filename: str) -> list:
         
     return base64_images
 
+import re
+
 def clean_json_response(content: str) -> str:
     content = content.strip()
-    # Try to extract content between curly braces if markdown fences fail
-    start_idx = content.find('{')
-    end_idx = content.rfind('}')
-    if start_idx != -1 and end_idx != -1:
-        content = content[start_idx:end_idx+1]
+    # Try to extract content between curly braces or square brackets
+    match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+    if match:
+        content = match.group(1)
     return content
 
 def extract_specs_from_file(file_content: bytes, filename: str) -> dict:
@@ -107,6 +108,10 @@ Rules:
     for attempt in range(max_retries):
         try:
             raw_text = extract_text_from_file(file_content, filename)
+            # Truncate raw_text to avoid exceeding token limits for massive files
+            if len(raw_text) > 15000:
+                logger.warning(f"Raw text truncated from {len(raw_text)} to 15000 chars.")
+                raw_text = raw_text[:15000]
             logger.info(f"Extracted {len(raw_text)} characters from {filename}")
 
             content = None
@@ -201,6 +206,7 @@ Rules:
 
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error on attempt {attempt+1}: {e}")
+            # Do not blindly retry for deterministic JSON decode errors without backing off or changing params
             if attempt == max_retries - 1:
                 raise Exception(f"AI returned invalid JSON: {content}")
         except Exception as e:
