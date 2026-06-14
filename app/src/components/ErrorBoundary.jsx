@@ -11,7 +11,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("ErrorBoundary caught an error", error, errorInfo);
+    console.error('ErrorBoundary caught an error', error, errorInfo);
   }
 
   render() {
@@ -22,8 +22,8 @@ export class ErrorBoundary extends React.Component {
           <p style={{ color: 'var(--text-secondary)' }}>
             L'application a rencontré un problème. Veuillez rafraîchir la page.
           </p>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             style={{ marginTop: '16px' }}
             onClick={() => window.location.reload()}
           >

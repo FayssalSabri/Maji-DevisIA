@@ -30,17 +30,24 @@ export const RecentQuotations = ({ setRoute }) => {
             </tr>
           </thead>
           <tbody>
-            {state.quotations.slice(0, 5).map(q => (
+            {state.quotations.slice(0, 5).map((q) => (
               <tr key={q.id}>
-                <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{q.id}</span></td>
+                <td>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{q.id}</span>
+                </td>
                 <td>{q.reference}</td>
                 <td>{q.client}</td>
                 <td>{new Date(q.date).toLocaleDateString('fr-FR')}</td>
                 <td>
-                  <span className={`badge ${
-                    q.status === 'Validé' ? 'badge-success' : 
-                    q.status === 'Envoyé' ? 'badge-info' : 'badge-warning'
-                  }`}>
+                  <span
+                    className={`badge ${
+                      q.status === 'Validé'
+                        ? 'badge-success'
+                        : q.status === 'Envoyé'
+                          ? 'badge-info'
+                          : 'badge-warning'
+                    }`}
+                  >
                     {q.status}
                   </span>
                 </td>
@@ -48,7 +55,7 @@ export const RecentQuotations = ({ setRoute }) => {
                   {q.totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <button 
+                  <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => {
                       alert(`Ouverture du devis ${q.id} (Simulation PDF)`);

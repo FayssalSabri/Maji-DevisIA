@@ -1,12 +1,12 @@
 export const validateQuotation = (specs, costs) => {
   const issues = [];
-  
+
   // 1. Check material info completeness
   if (!specs.material.type || specs.material.type === 'Non renseigné') {
     issues.push({
       level: 'fail',
       title: 'Matière manquante',
-      message: 'Le type de matière n\'a pas pu être détecté de manière fiable sur le plan.'
+      message: "Le type de matière n'a pas pu être détecté de manière fiable sur le plan."
     });
   } else if (!specs.material.nuance || specs.material.nuance === 'Non renseigné') {
     issues.push({
@@ -17,7 +17,11 @@ export const validateQuotation = (specs, costs) => {
   }
 
   // 2. Check dimension consistency
-  if (specs.dimensions.length === 0 || specs.dimensions.width === 0 || specs.material.thickness === 0) {
+  if (
+    specs.dimensions.length === 0 ||
+    specs.dimensions.width === 0 ||
+    specs.material.thickness === 0
+  ) {
     issues.push({
       level: 'fail',
       title: 'Dimensions critiques manquantes',
@@ -29,7 +33,7 @@ export const validateQuotation = (specs, costs) => {
   if (specs.dimensions.mass > 0 && costs.details.calculatedMass > 0) {
     const massKg = specs.dimensions.mass / 1000;
     const diffRatio = Math.abs(massKg - costs.details.calculatedMass) / massKg;
-    
+
     // If difference is > 20%
     if (diffRatio > 0.2) {
       issues.push({
@@ -48,7 +52,7 @@ export const validateQuotation = (specs, costs) => {
 
   // 4. Feasibility (Bending radius vs thickness)
   let bendingIssue = false;
-  (specs.bends || []).forEach(b => {
+  (specs.bends || []).forEach((b) => {
     if (b.radius < specs.material.thickness) {
       bendingIssue = true;
     }
@@ -57,21 +61,25 @@ export const validateQuotation = (specs, costs) => {
     issues.push({
       level: 'warn',
       title: 'Faisabilité pliage',
-      message: 'Attention, certains rayons de pliage sont inférieurs à l\'épaisseur de tôle, risque de déchirure.'
+      message:
+        "Attention, certains rayons de pliage sont inférieurs à l'épaisseur de tôle, risque de déchirure."
     });
   }
 
   // Overall score
   let score = 100;
   let hasFail = false;
-  issues.forEach(i => {
-    if (i.level === 'fail') { score -= 30; hasFail = true; }
+  issues.forEach((i) => {
+    if (i.level === 'fail') {
+      score -= 30;
+      hasFail = true;
+    }
     if (i.level === 'warn') score -= 10;
   });
 
   return {
     issues,
     score: Math.max(0, score),
-    status: hasFail ? 'fail' : (score < 80 ? 'warn' : 'pass')
+    status: hasFail ? 'fail' : score < 80 ? 'warn' : 'pass'
   };
 };

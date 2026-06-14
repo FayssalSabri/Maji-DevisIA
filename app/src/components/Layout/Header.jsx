@@ -13,12 +13,12 @@ export const Header = ({ title, subtitle }) => {
         <button className="btn btn-ghost" style={{ padding: '8px' }}>
           <Bell size={18} />
         </button>
-        <UserButton 
+        <UserButton
           appearance={{
             elements: {
               userButtonAvatarBox: {
                 width: '32px',
-                height: '32px',
+                height: '32px'
               }
             }
           }}

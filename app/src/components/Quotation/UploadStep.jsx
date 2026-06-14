@@ -5,7 +5,7 @@ import { useAppContext } from '../../context/AppContext';
 export const UploadStep = () => {
   const { dispatch, simulateExtraction } = useAppContext();
   const [dragActive, setDragActive] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState('');
   // Dev flag: set to true to bypass AI and use instant mock data
   const USE_MOCK = true;
   const fileInputRef = useRef(null);
@@ -13,26 +13,26 @@ export const UploadStep = () => {
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   };
 
   const validateAndProcessFile = (file) => {
-    setErrorMsg("");
+    setErrorMsg('');
 
     // Validate type
     const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
-      setErrorMsg("Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.");
+      setErrorMsg('Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.');
       return;
     }
 
     // Validate size (10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg("Fichier trop volumineux. La taille maximale est de 10MB.");
+      setErrorMsg('Fichier trop volumineux. La taille maximale est de 10MB.');
       return;
     }
 
@@ -63,11 +63,21 @@ export const UploadStep = () => {
     <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>Importer un plan technique</h2>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '13px' }}>
-        Déposez le PDF du plan client. L'IA va automatiquement extraire la cartouche, la matière et les dimensions.
+        Déposez le PDF du plan client. L'IA va automatiquement extraire la cartouche, la matière et
+        les dimensions.
       </p>
 
       {errorMsg && (
-        <div style={{ padding: '12px', background: 'var(--error-bg, #fee2e2)', color: 'var(--error, #ef4444)', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+        <div
+          style={{
+            padding: '12px',
+            background: 'var(--error-bg, #fee2e2)',
+            color: 'var(--error, #ef4444)',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '14px'
+          }}
+        >
           {errorMsg}
         </div>
       )}
@@ -105,7 +115,9 @@ export const UploadStep = () => {
             <FileType2 style={{ color: 'var(--error)' }} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 600 }}>piece_003.pdf</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>SUPPORT REAR BRAKE</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                SUPPORT REAR BRAKE
+              </div>
             </div>
           </button>
         </div>
