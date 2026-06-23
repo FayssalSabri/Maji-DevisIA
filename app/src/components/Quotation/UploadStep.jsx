@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { UploadCloud, FileType2 } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { UploadCloud, FileType2, FileWarning } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export const UploadStep = () => {
@@ -10,7 +10,7 @@ export const UploadStep = () => {
   const USE_MOCK = true;
   const fileInputRef = useRef(null);
 
-  const handleDrag = (e) => {
+  const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -18,46 +18,58 @@ export const UploadStep = () => {
     } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
-  };
+  }, []);
 
-  const validateAndProcessFile = (file) => {
-    setErrorMsg('');
+  const processFile = useCallback(
+    (fileObj) => {
+      dispatch({ type: 'UPLOAD_FILE', payload: fileObj });
+      simulateExtraction({ ...fileObj, useMock: USE_MOCK });
+    },
+    [dispatch, simulateExtraction]
+  );
 
-    // Validate type
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
-      setErrorMsg('Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.');
-      return;
-    }
+  const validateAndProcessFile = useCallback(
+    (file) => {
+      setErrorMsg('');
 
-    // Validate size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg('Fichier trop volumineux. La taille maximale est de 10MB.');
-      return;
-    }
+      // Validate type
+      const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
+        setErrorMsg('Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.');
+        return;
+      }
 
-    processFile({ name: file.name, nativeFile: file });
-  };
+      // Validate size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMsg('Fichier trop volumineux. La taille maximale est de 10MB.');
+        return;
+      }
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateAndProcessFile(e.dataTransfer.files[0]);
-    }
-  };
+      processFile({ name: file.name, nativeFile: file });
+    },
+    [processFile]
+  );
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      validateAndProcessFile(e.target.files[0]);
-    }
-  };
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        validateAndProcessFile(e.dataTransfer.files[0]);
+      }
+    },
+    [validateAndProcessFile]
+  );
 
-  const processFile = (fileObj) => {
-    dispatch({ type: 'UPLOAD_FILE', payload: fileObj });
-    simulateExtraction({ ...fileObj, useMock: USE_MOCK });
-  };
+  const handleFileChange = useCallback(
+    (e) => {
+      if (e.target.files && e.target.files[0]) {
+        validateAndProcessFile(e.target.files[0]);
+      }
+    },
+    [validateAndProcessFile]
+  );
 
   return (
     <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -69,15 +81,21 @@ export const UploadStep = () => {
 
       {errorMsg && (
         <div
+          className="fade-in"
           style={{
-            padding: '12px',
-            background: 'var(--error-bg, #fee2e2)',
-            color: 'var(--error, #ef4444)',
+            padding: '12px 16px',
+            background: 'var(--error-muted)',
+            color: 'var(--error)',
             borderRadius: '8px',
-            marginBottom: '16px',
-            fontSize: '14px'
+            marginBottom: '20px',
+            fontSize: '13px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}
         >
+          <FileWarning size={18} />
           {errorMsg}
         </div>
       )}
