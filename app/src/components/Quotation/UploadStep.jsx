@@ -20,44 +20,56 @@ export const UploadStep = () => {
     }
   }, []);
 
-  const processFile = useCallback((fileObj) => {
-    dispatch({ type: 'UPLOAD_FILE', payload: fileObj });
-    simulateExtraction({ ...fileObj, useMock: USE_MOCK });
-  }, [dispatch, simulateExtraction]);
+  const processFile = useCallback(
+    (fileObj) => {
+      dispatch({ type: 'UPLOAD_FILE', payload: fileObj });
+      simulateExtraction({ ...fileObj, useMock: USE_MOCK });
+    },
+    [dispatch, simulateExtraction]
+  );
 
-  const validateAndProcessFile = useCallback((file) => {
-    setErrorMsg('');
+  const validateAndProcessFile = useCallback(
+    (file) => {
+      setErrorMsg('');
 
-    // Validate type
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
-      setErrorMsg('Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.');
-      return;
-    }
+      // Validate type
+      const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
+        setErrorMsg('Format non supporté. Veuillez utiliser un PDF, PNG, ou JPG.');
+        return;
+      }
 
-    // Validate size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMsg('Fichier trop volumineux. La taille maximale est de 10MB.');
-      return;
-    }
+      // Validate size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMsg('Fichier trop volumineux. La taille maximale est de 10MB.');
+        return;
+      }
 
-    processFile({ name: file.name, nativeFile: file });
-  }, [processFile]);
+      processFile({ name: file.name, nativeFile: file });
+    },
+    [processFile]
+  );
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateAndProcessFile(e.dataTransfer.files[0]);
-    }
-  }, [validateAndProcessFile]);
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        validateAndProcessFile(e.dataTransfer.files[0]);
+      }
+    },
+    [validateAndProcessFile]
+  );
 
-  const handleFileChange = useCallback((e) => {
-    if (e.target.files && e.target.files[0]) {
-      validateAndProcessFile(e.target.files[0]);
-    }
-  }, [validateAndProcessFile]);
+  const handleFileChange = useCallback(
+    (e) => {
+      if (e.target.files && e.target.files[0]) {
+        validateAndProcessFile(e.target.files[0]);
+      }
+    },
+    [validateAndProcessFile]
+  );
 
   return (
     <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
